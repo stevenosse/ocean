@@ -8,6 +8,9 @@ export class CreateProjectDto {
   repositoryUrl: string;
 
   @IsString()
+  rootFolder: string;
+
+  @IsString()
   @IsOptional()
   branch: string;
 

@@ -88,6 +88,21 @@
               <p class="mt-2 text-sm text-gray-500">The Git branch to deploy (defaults to main/master)</p>
             </div>
 
+            <!-- Root Folder Field -->
+            <div class="relative">
+              <label for="rootFolder" class="block text-sm font-medium text-gray-700 mb-1">Root Folder</label>
+              <div class="relative">
+                <input 
+                  type="text" 
+                  id="rootFolder" 
+                  v-model="project.rootFolder" 
+                  class="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base"
+                  placeholder="/"
+                />
+              </div>
+              <p class="mt-2 text-sm text-gray-500">The root folder path where the docker-compose file is located (defaults to repository root)</p>
+            </div>
+
             <!-- Docker Configuration Section -->
             <div class="pt-2 pb-1">
               <h3 class="text-lg font-medium text-gray-900 mb-4">Docker Configuration</h3>

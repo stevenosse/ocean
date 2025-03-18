@@ -18,18 +18,19 @@ enum DeploymentStatus {
 }
 
 model Project {
-  id                Int          @id @default(autoincrement())
-  name              String
-  repositoryUrl     String       @map("repository_url")
-  branch            String?
-  dockerComposeFile String?      @map("docker_compose_file")
-  dockerServiceName String?      @map("docker_service_name")
-  active            Boolean      @default(true)
-  webhookSecret     String?      @map("webhook_secret")
-  githubInstallationId Int?       @map("github_installation_id")
-  createdAt         DateTime     @default(now()) @map("created_at")
-  updatedAt         DateTime     @default(now()) @updatedAt @map("updated_at")
-  deployments       Deployment[]
+  id                   Int          @id @default(autoincrement())
+  name                 String
+  repositoryUrl        String       @map("repository_url")
+  branch               String?
+  dockerComposeFile    String?      @map("docker_compose_file")
+  dockerServiceName    String?      @map("docker_service_name")
+  active               Boolean      @default(true)
+  webhookSecret        String?      @map("webhook_secret")
+  githubInstallationId Int?         @map("github_installation_id")
+  rootFolder           String       @map("root_folder")
+  createdAt            DateTime     @default(now()) @map("created_at")
+  updatedAt            DateTime     @default(now()) @updatedAt @map("updated_at")
+  deployments          Deployment[]
 
   @@map("projects")
 }

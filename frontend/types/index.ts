@@ -10,6 +10,7 @@ export interface Project {
   name: string;
   repositoryUrl: string;
   branch?: string;
+  rootFolder?: string;
   dockerComposeFile?: string;
   dockerServiceName?: string;
   active: boolean;

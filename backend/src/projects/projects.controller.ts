@@ -1,10 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpStatus, HttpException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpStatus, HttpException, BadRequestException } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { DeploymentsService } from '../deployments/deployments.service';
+import { ApiTags } from '@nestjs/swagger';
 
 @Controller('projects')
+@ApiTags('projects')
 export class ProjectsController {
   constructor(
     private readonly projectsService: ProjectsService,
@@ -16,10 +18,7 @@ export class ProjectsController {
     try {
       return await this.projectsService.create(createProjectDto);
     } catch (error) {
-      throw new HttpException(
-        error.message || 'Failed to create project',
-        HttpStatus.BAD_REQUEST,
-      );
+      throw new BadRequestException(error.message || 'Failed to create project');
     }
   }
 
