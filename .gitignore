@@ -1,0 +1,11 @@
+.env
+
+backend/repos/
+
+dist
+
+.output
+
+.nuxt
+
+node_modules/

@@ -1,0 +1,50 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DeploymentStatus {
+  pending
+  in_progress
+  completed
+  failed
+}
+
+model Project {
+  id                Int          @id @default(autoincrement())
+  name              String
+  repositoryUrl     String       @map("repository_url")
+  branch            String?
+  dockerComposeFile String?      @map("docker_compose_file")
+  dockerServiceName String?      @map("docker_service_name")
+  active            Boolean      @default(true)
+  webhookSecret     String?      @map("webhook_secret")
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @default(now()) @updatedAt @map("updated_at")
+  deployments       Deployment[]
+
+  @@map("projects")
+}
+
+model Deployment {
+  id            Int              @id @default(autoincrement())
+  project       Project          @relation(fields: [projectId], references: [id])
+  projectId     Int              @map("project_id")
+  commitHash    String           @map("commit_hash")
+  commitMessage String?          @map("commit_message")
+  status        DeploymentStatus @default(pending)
+  logs          String?
+  startedAt     DateTime         @default(now()) @map("started_at")
+  completedAt   DateTime?        @map("completed_at")
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @default(now()) @updatedAt @map("updated_at")
+
+  @@map("deployments")
+}
