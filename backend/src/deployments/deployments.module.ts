@@ -9,7 +9,7 @@ import { EnvironmentsModule } from '../environments/environments.module';
 @Module({
   imports: [
     forwardRef(() => ProjectsModule),
-    EnvironmentsModule,
+    forwardRef(() => EnvironmentsModule),
   ],
   controllers: [DeploymentsController],
   providers: [DeploymentsService, DeploymentWorkerService, GithubService],

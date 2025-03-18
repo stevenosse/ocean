@@ -2,8 +2,10 @@
   <div>
     <div class="flex items-center justify-between mb-8">
       <h1 class="text-3xl font-bold text-gray-900">New Project</h1>
-      <NuxtLink to="/projects" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 shadow-sm">
-        <svg class="-ml-1 mr-2 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <NuxtLink to="/projects"
+        class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 shadow-sm">
+        <svg class="-ml-1 mr-2 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+          stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
         </svg>
         Back to Projects
@@ -16,17 +18,13 @@
           <div class="space-y-8">
             <!-- Project Name Field -->
             <div class="relative">
-              <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Project Name <span class="text-red-500">*</span></label>
+              <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Project Name <span
+                  class="text-red-500">*</span></label>
               <div class="relative">
-                <input 
-                  type="text" 
-                  id="name" 
-                  v-model="project.name" 
-                  :class="['block w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base', 
+                <input type="text" id="name" v-model="project.name"
+                  :class="['block w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base',
                     errors.name ? 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500']"
-                  @blur="validateField('name')"
-                  placeholder="Enter project name"
-                />
+                  @blur="validateField('name')" placeholder="Enter project name" />
                 <div v-if="errors.name" class="mt-2 text-sm text-red-600">
                   {{ errors.name }}
                 </div>
@@ -35,17 +33,13 @@
 
             <!-- Repository URL Field -->
             <div class="relative">
-              <label for="repositoryUrl" class="block text-sm font-medium text-gray-700 mb-1">Repository URL <span class="text-red-500">*</span></label>
+              <label for="repositoryUrl" class="block text-sm font-medium text-gray-700 mb-1">Repository URL <span
+                  class="text-red-500">*</span></label>
               <div class="relative">
-                <input 
-                  type="text" 
-                  id="repositoryUrl" 
-                  v-model="project.repositoryUrl" 
-                  :class="['block w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base', 
+                <input type="text" id="repositoryUrl" v-model="project.repositoryUrl"
+                  :class="['block w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base',
                     errors.repositoryUrl ? 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500']"
-                  @blur="validateField('repositoryUrl')"
-                  placeholder="https://github.com/username/repo.git"
-                />
+                  @blur="validateField('repositoryUrl')" placeholder="https://github.com/username/repo.git" />
                 <div v-if="errors.repositoryUrl" class="mt-2 text-sm text-red-600">
                   {{ errors.repositoryUrl }}
                 </div>
@@ -57,13 +51,9 @@
             <div class="relative">
               <label for="branch" class="block text-sm font-medium text-gray-700 mb-1">Branch</label>
               <div class="relative">
-                <input 
-                  type="text" 
-                  id="branch" 
-                  v-model="project.branch" 
+                <input type="text" id="branch" v-model="project.branch"
                   class="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base"
-                  placeholder="main"
-                />
+                  placeholder="main" />
               </div>
               <p class="mt-2 text-sm text-gray-500">The Git branch to deploy (defaults to main/master)</p>
             </div>
@@ -72,32 +62,25 @@
             <div class="relative">
               <label for="rootFolder" class="block text-sm font-medium text-gray-700 mb-1">Root Folder</label>
               <div class="relative">
-                <input 
-                  type="text" 
-                  id="rootFolder" 
-                  v-model="project.rootFolder" 
+                <input type="text" id="rootFolder" v-model="project.rootFolder"
                   class="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base"
-                  placeholder="/"
-                />
+                  placeholder="/" />
               </div>
-              <p class="mt-2 text-sm text-gray-500">The root folder path where the docker-compose file is located (defaults to repository root)</p>
+              <p class="mt-2 text-sm text-gray-500">The root folder path where the docker-compose file is located
+                (defaults to repository root)</p>
             </div>
 
             <!-- Build Configuration Section -->
             <div class="pt-2 pb-1">
               <h3 class="text-lg font-medium text-gray-900 mb-4">Build Configuration</h3>
-              
+
               <!-- Install Command Field -->
               <div class="relative mb-6">
                 <label for="installCommand" class="block text-sm font-medium text-gray-700 mb-1">Install Command</label>
                 <div class="relative">
-                  <input 
-                    type="text" 
-                    id="installCommand" 
-                    v-model="project.installCommand" 
+                  <input type="text" id="installCommand" v-model="project.installCommand"
                     class="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base"
-                    placeholder="npm install"
-                  />
+                    placeholder="npm install" />
                 </div>
                 <p class="mt-2 text-sm text-gray-500">Command to install dependencies (e.g., npm install, yarn)</p>
               </div>
@@ -106,13 +89,9 @@
               <div class="relative mb-6">
                 <label for="buildCommand" class="block text-sm font-medium text-gray-700 mb-1">Build Command</label>
                 <div class="relative">
-                  <input 
-                    type="text" 
-                    id="buildCommand" 
-                    v-model="project.buildCommand" 
+                  <input type="text" id="buildCommand" v-model="project.buildCommand"
                     class="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base"
-                    placeholder="npm run build"
-                  />
+                    placeholder="npm run build" />
                 </div>
                 <p class="mt-2 text-sm text-gray-500">Command to build the project (e.g., npm run build)</p>
               </div>
@@ -121,28 +100,21 @@
               <div class="relative mb-6">
                 <label for="startCommand" class="block text-sm font-medium text-gray-700 mb-1">Start Command</label>
                 <div class="relative">
-                  <input 
-                    type="text" 
-                    id="startCommand" 
-                    v-model="project.startCommand" 
+                  <input type="text" id="startCommand" v-model="project.startCommand"
                     class="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base"
-                    placeholder="npm start"
-                  />
+                    placeholder="npm start" />
                 </div>
                 <p class="mt-2 text-sm text-gray-500">Command to start the project (e.g., npm start, node server.js)</p>
               </div>
 
               <!-- Output Directory Field -->
               <div class="relative mb-6">
-                <label for="outputDirectory" class="block text-sm font-medium text-gray-700 mb-1">Output Directory</label>
+                <label for="outputDirectory" class="block text-sm font-medium text-gray-700 mb-1">Output
+                  Directory</label>
                 <div class="relative">
-                  <input 
-                    type="text" 
-                    id="outputDirectory" 
-                    v-model="project.outputDirectory" 
+                  <input type="text" id="outputDirectory" v-model="project.outputDirectory"
                     class="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base"
-                    placeholder="dist"
-                  />
+                    placeholder="dist" />
                 </div>
                 <p class="mt-2 text-sm text-gray-500">Directory where build output is located (e.g., dist, build)</p>
               </div>
@@ -151,33 +123,28 @@
             <!-- Docker Configuration Section -->
             <div class="pt-2 pb-1">
               <h3 class="text-lg font-medium text-gray-900 mb-4">Docker Configuration</h3>
-              
+
               <!-- Docker Compose File Field -->
               <div class="relative mb-6">
-                <label for="dockerComposeFile" class="block text-sm font-medium text-gray-700 mb-1">Docker Compose File</label>
+                <label for="dockerComposeFile" class="block text-sm font-medium text-gray-700 mb-1">Docker Compose
+                  File</label>
                 <div class="relative">
-                  <input 
-                    type="text" 
-                    id="dockerComposeFile" 
-                    v-model="project.dockerComposeFile" 
+                  <input type="text" id="dockerComposeFile" v-model="project.dockerComposeFile"
                     class="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base"
-                    placeholder="docker-compose.yml"
-                  />
+                    placeholder="docker-compose.yml" />
                 </div>
-                <p class="mt-2 text-sm text-gray-500">Path to docker-compose.yml (defaults to docker-compose.yml in the root)</p>
+                <p class="mt-2 text-sm text-gray-500">Path to docker-compose.yml (defaults to docker-compose.yml in the
+                  root)</p>
               </div>
 
               <!-- Docker Service Name Field -->
               <div class="relative">
-                <label for="dockerServiceName" class="block text-sm font-medium text-gray-700 mb-1">Docker Service Name</label>
+                <label for="dockerServiceName" class="block text-sm font-medium text-gray-700 mb-1">Docker Service
+                  Name</label>
                 <div class="relative">
-                  <input 
-                    type="text" 
-                    id="dockerServiceName" 
-                    v-model="project.dockerServiceName" 
+                  <input type="text" id="dockerServiceName" v-model="project.dockerServiceName"
                     class="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base"
-                    placeholder="app"
-                  />
+                    placeholder="app" />
                 </div>
                 <p class="mt-2 text-sm text-gray-500">The service name in docker-compose.yml to deploy</p>
               </div>
@@ -187,34 +154,28 @@
             <div class="relative">
               <label for="webhookSecret" class="block text-sm font-medium text-gray-700 mb-1">Webhook Secret</label>
               <div class="relative">
-                <input 
-                  type="text" 
-                  id="webhookSecret" 
-                  v-model="project.webhookSecret" 
+                <input type="text" id="webhookSecret" v-model="project.webhookSecret"
                   class="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base"
-                  placeholder="Enter webhook secret"
-                />
+                  placeholder="Enter webhook secret" />
               </div>
               <p class="mt-2 text-sm text-gray-500">Secret for webhook authentication (optional)</p>
             </div>
 
             <!-- Form Actions -->
             <div class="flex justify-end pt-4">
-              <button 
-                type="button" 
-                @click="$router.push('/projects')" 
-                class="mr-4 inline-flex items-center px-5 py-3 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
-              >
+              <button type="button" @click="$router.push('/projects')"
+                class="mr-4 inline-flex items-center px-5 py-3 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
                 Cancel
               </button>
-              <button 
-                type="submit" 
+              <button type="submit"
                 class="inline-flex items-center px-5 py-3 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
-                :disabled="isSubmitting"
-              >
-                <svg v-if="isSubmitting" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                :disabled="isSubmitting">
+                <svg v-if="isSubmitting" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12c0-4.418 3.582-8 8-8v4c-2.209 0-4 1.791-4 4s1.791 4 4 4v4c-4.418 0-8-3.582-8-8z"></path>
+                  <path class="opacity-75" fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12c0-4.418 3.582-8 8-8v4c-2.209 0-4 1.791-4 4s1.791 4 4 4v4c-4.418 0-8-3.582-8-8z">
+                  </path>
                 </svg>
                 Create Project
               </button>
@@ -275,7 +236,7 @@ const validateField = (field: string) => {
       return true
     }
   }
-  
+
   if (field === 'repositoryUrl') {
     if (!project.value.repositoryUrl) {
       errors.repositoryUrl = 'Repository URL is required'
@@ -288,7 +249,7 @@ const validateField = (field: string) => {
       return true
     }
   }
-  
+
   return true
 }
 
@@ -301,28 +262,21 @@ const validateAndSaveProject = async () => {
   // Validate all fields
   const nameValid = validateField('name')
   const repoValid = validateField('repositoryUrl')
-  
+
   if (!nameValid || !repoValid) {
     toast.warning('Please fix the errors', 'Some fields need your attention')
     return
   }
-  
+
   isSubmitting.value = true
-  
+
   try {
-    // Check if it's a GitHub repository
-    if (project.value.repositoryUrl?.includes('github.com')) {
-      // First create the project
-      const result = await api.createProject(project.value)
-      if (result) {
-        // Redirect to GitHub App installation page
-        window.location.href = `${baseURL}/github/install?projectId=${result.id}`
-        return
-      }
-    } else {
-      // For non-GitHub repositories, proceed normally
-      const result = await api.createProject(project.value)
-      if (result) {
+    const result = await api.createProject(project.value)
+
+    if (result) {
+      if (project.value.repositoryUrl?.includes('github.com')) {
+        window.open(`${baseURL}/github/install?projectId=${result.id}`, '_blank')
+      } else {
         toast.success('Project created successfully', 'Your new project is ready')
         router.push(`/projects/${result.id}`)
       }

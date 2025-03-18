@@ -29,6 +29,7 @@
             Add Variable
           </button>
         </h3>
+        <p class="mt-2 text-sm text-gray-500">Changes to environment variables will automatically trigger a redeployment of your project in a Docker container.</p>
       </div>
       
       <div v-if="environments.length === 0" class="px-6 py-10 text-center text-gray-500">
@@ -306,7 +307,7 @@ const saveEnvironment = async () => {
         isSecret: currentEnv.isSecret
       })
       if (result) {
-        toast.success('Environment variable updated successfully')
+        toast.success('Environment variable updated successfully', 'A redeployment has been triggered')
       } else {
         throw new Error('Failed to update environment variable')
       }
@@ -314,7 +315,7 @@ const saveEnvironment = async () => {
       // Create new environment
       const result = await api.createEnvironment(currentEnv)
       if (result) {
-        toast.success('Environment variable added successfully')
+        toast.success('Environment variable added successfully', 'A redeployment has been triggered')
       } else {
         throw new Error('Failed to create environment variable')
       }
@@ -345,7 +346,7 @@ const deleteEnvironment = async () => {
     const success = await api.deleteEnvironment(envToDelete.value.id)
     
     if (success) {
-      toast.success('Environment variable deleted successfully')
+      toast.success('Environment variable deleted successfully', 'A redeployment has been triggered')
       showDeleteModal.value = false
     } else {
       throw new Error('Failed to delete environment variable')

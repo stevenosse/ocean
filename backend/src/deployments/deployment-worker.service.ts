@@ -161,8 +161,8 @@ export class DeploymentWorkerService {
       return;
     }
 
-    // Otherwise, run custom build steps
-    await this.runCustomBuildSteps(deploymentId, project, workingDir, envVars);
+    // Otherwise, deploy as a Docker container
+    await this.runDockerContainerDeployment(deploymentId, project, workingDir, envVars);
   }
 
   private async runDockerComposeDeployment(
@@ -184,6 +184,156 @@ export class DeploymentWorkerService {
     await this.updateDeploymentLogs(deploymentId, logs);
   }
 
+  private async runDockerContainerDeployment(
+    deploymentId: number, 
+    project: any, 
+    workingDir: string, 
+    envVars: Record<string, string>
+  ): Promise<void> {
+    const currentDeployment = await this.prisma.deployment.findUnique({ where: { id: deploymentId } });
+    let logs = currentDeployment?.logs || '';
+    
+    // Create a Dockerfile if it doesn't exist
+    const dockerfilePath = path.join(workingDir, 'Dockerfile');
+    if (!fs.existsSync(dockerfilePath)) {
+      logs += '\nNo Dockerfile found, creating one for Node.js project\n';
+      await this.updateDeploymentLogs(deploymentId, logs);
+      
+      // Create a basic Dockerfile for Node.js projects
+      const dockerfile = this.generateNodejsDockerfile(project);
+      fs.writeFileSync(dockerfilePath, dockerfile);
+      
+      logs += `Created Dockerfile for Node.js project\n`;
+      await this.updateDeploymentLogs(deploymentId, logs);
+    } else {
+      logs += '\nUsing existing Dockerfile\n';
+      await this.updateDeploymentLogs(deploymentId, logs);
+    }
+    
+    // Create .env file with project environment variables
+    const envFilePath = path.join(workingDir, '.env');
+    const envFileContent = Object.entries(envVars)
+      .map(([key, value]) => `${key}=${value}`)
+      .join('\n');
+    
+    fs.writeFileSync(envFilePath, envFileContent);
+    logs += `\nCreated .env file with ${Object.keys(envVars).length} environment variables\n`;
+    await this.updateDeploymentLogs(deploymentId, logs);
+    
+    // Build the Docker image
+    const containerName = `ocean-project-${project.id}`;
+    const imageName = `ocean-project-${project.id}:latest`;
+    
+    logs += `\nBuilding Docker image: ${imageName}\n`;
+    await this.updateDeploymentLogs(deploymentId, logs);
+    
+    try {
+      // Build the Docker image
+      const { stdout: buildStdout, stderr: buildStderr } = await execAsync(
+        `cd ${workingDir} && docker build -t ${imageName} .`
+      );
+      
+      logs += buildStdout + buildStderr;
+      await this.updateDeploymentLogs(deploymentId, logs);
+      
+      // Stop and remove any existing container
+      logs += '\nStopping and removing any existing container\n';
+      await this.updateDeploymentLogs(deploymentId, logs);
+      
+      try {
+        await execAsync(`docker stop ${containerName} && docker rm ${containerName}`);
+      } catch (error) {
+        // Ignore errors if container doesn't exist
+        logs += 'No existing container found or could not be removed\n';
+        await this.updateDeploymentLogs(deploymentId, logs);
+      }
+      
+      // Run the Docker container
+      logs += `\nStarting Docker container: ${containerName}\n`;
+      await this.updateDeploymentLogs(deploymentId, logs);
+      
+      // Create environment variables arguments for docker run
+      const envArgs = Object.entries(envVars)
+        .map(([key, value]) => `-e ${key}=${value}`)
+        .join(' ');
+      
+      // Determine the port to expose (default to 3000 for Node.js)
+      const port = 3000;
+      
+      // Run the container
+      const { stdout: runStdout, stderr: runStderr } = await execAsync(
+        `docker run -d --name ${containerName} -p ${port}:${port} ${envArgs} ${imageName}`
+      );
+      
+      logs += runStdout + runStderr;
+      logs += `\nContainer ${containerName} is now running on port ${port}\n`;
+      await this.updateDeploymentLogs(deploymentId, logs);
+      
+    } catch (error) {
+      logs += `\nError deploying Docker container: ${error.message}\n`;
+      await this.updateDeploymentLogs(deploymentId, logs);
+      throw error;
+    }
+  }
+  
+  private generateNodejsDockerfile(project: any): string {
+    // Default Node.js version
+    const nodeVersion = '18';
+    
+    // Default commands if not specified
+    const installCommand = project.installCommand || 'npm install';
+    const buildCommand = project.buildCommand || '';
+    const startCommand = project.startCommand || 'npm start';
+    const outputDirectory = project.outputDirectory || '';
+    
+    // Generate the Dockerfile content
+    let dockerfile = `FROM node:${nodeVersion}-alpine
+
+`;
+    dockerfile += `WORKDIR /app
+
+`;
+    dockerfile += `# Copy package.json and package-lock.json
+`;
+    dockerfile += `COPY package*.json ./
+
+`;
+    dockerfile += `# Install dependencies
+`;
+    dockerfile += `RUN ${installCommand}
+
+`;
+    dockerfile += `# Copy the rest of the application
+`;
+    dockerfile += `COPY . .
+
+`;
+    
+    // Add build command if specified
+    if (buildCommand) {
+      dockerfile += `# Build the application
+`;
+      dockerfile += `RUN ${buildCommand}
+
+`;
+    }
+    
+    // Expose port 3000 by default for Node.js applications
+    dockerfile += `# Expose the port the app runs on
+`;
+    dockerfile += `EXPOSE 3000
+
+`;
+    
+    // Add start command
+    dockerfile += `# Start the application
+`;
+    dockerfile += `CMD ${startCommand.startsWith('[') ? startCommand : `["sh", "-c", "${startCommand}"]`}
+`;
+    
+    return dockerfile;
+  }
+  
   private async runCustomBuildSteps(
     deploymentId: number, 
     project: any, 
