@@ -156,6 +156,8 @@ import type { Project } from '~/types'
 const router = useRouter()
 const api = useApi()
 const toast = useToast()
+const config = useRuntimeConfig()
+const baseURL = config.public.apiURL
 
 const project = ref<Partial<Project>>({
   name: '',
@@ -222,10 +224,22 @@ const validateAndSaveProject = async () => {
   isSubmitting.value = true
   
   try {
-    const result = await api.createProject(project.value)
-    if (result) {
-      toast.success('Project created successfully', 'Your new project is ready')
-      router.push(`/projects/${result.id}`)
+    // Check if it's a GitHub repository
+    if (project.value.repositoryUrl?.includes('github.com')) {
+      // First create the project
+      const result = await api.createProject(project.value)
+      if (result) {
+        // Redirect to GitHub App installation page
+        window.location.href = `${baseURL}/github/install?projectId=${result.id}`
+        return
+      }
+    } else {
+      // For non-GitHub repositories, proceed normally
+      const result = await api.createProject(project.value)
+      if (result) {
+        toast.success('Project created successfully', 'Your new project is ready')
+        router.push(`/projects/${result.id}`)
+      }
     }
   } catch (error) {
     console.error('Error creating project:', error)

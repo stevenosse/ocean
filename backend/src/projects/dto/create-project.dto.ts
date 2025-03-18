@@ -19,11 +19,15 @@ export class CreateProjectDto {
   @IsOptional()
   dockerServiceName: string;
 
+  @IsString()
+  @IsOptional()
+  webhookSecret: string;
+
+  @IsOptional()
+  githubInstallationId: number;
+
   @IsBoolean()
   @IsOptional()
   active: boolean;
 
-  @IsString()
-  @IsOptional()
-  webhookSecret: string;
 }
