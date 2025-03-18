@@ -15,8 +15,22 @@ export interface Project {
   dockerServiceName?: string;
   active: boolean;
   webhookSecret?: string;
+  buildCommand?: string;
+  startCommand?: string;
+  installCommand?: string;
+  outputDirectory?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface Environment {
+  id?: number;
+  projectId: number;
+  key: string;
+  value: string;
+  isSecret: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Deployment {

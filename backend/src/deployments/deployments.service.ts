@@ -4,6 +4,7 @@ import { DeploymentStatus } from '@prisma/client';
 import { ProjectsService } from '../projects/projects.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { GithubService } from '../github/github.service';
+import { DeploymentWorkerService } from './deployment-worker.service';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs';
@@ -18,6 +19,7 @@ export class DeploymentsService {
     private prisma: PrismaService,
     private projectsService: ProjectsService,
     private githubService: GithubService,
+    private deploymentWorkerService: DeploymentWorkerService,
   ) {}
 
   async create(createDeploymentDto: CreateDeploymentDto): Promise<Deployment> {
@@ -34,8 +36,8 @@ export class DeploymentsService {
       include: { project: true },
     });
 
-    // Start the deployment process asynchronously
-    this.startDeployment(deployment);
+    // Start the deployment process asynchronously in a separate process
+    this.deploymentWorkerService.startDeployment(deployment);
     
     return deployment;
   }
@@ -77,7 +79,7 @@ export class DeploymentsService {
       });
 
       const project = await this.projectsService.findOne(deployment.projectId);
-      const repoDir = path.join(process.cwd(), 'repos', `project-${project.id}`);
+      const repoDir = path.join(process.cwd(), '../repos', `project-${project.id}`);
       
       // Create repo directory if it doesn't exist
       if (!fs.existsSync(repoDir)) {

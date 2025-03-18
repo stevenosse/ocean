@@ -1,6 +1,8 @@
 .env
 
-backend/repos/
+repos
+
+logs
 
 dist
 
@@ -9,3 +11,4 @@ dist
 .nuxt
 
 node_modules/
+

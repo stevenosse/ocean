@@ -1,5 +1,5 @@
 import { useRuntimeConfig } from 'nuxt/app'
-import type { Project, Deployment } from '~/types'
+import type { Project, Deployment, Environment } from '~/types'
 
 export const useApi = () => {
   const config = useRuntimeConfig()
@@ -85,6 +85,60 @@ export const useApi = () => {
     }
   }
 
+  const fetchEnvironments = async (projectId: number): Promise<Environment[]> => {
+    try {
+      return await $fetch<Environment[]>(`${baseURL}/environments/project/${projectId}`)
+    } catch (error) {
+      console.error(`Error fetching environments for project ${projectId}:`, error)
+      return []
+    }
+  }
+
+  const fetchEnvironment = async (id: number): Promise<Environment | null> => {
+    try {
+      return await $fetch<Environment>(`${baseURL}/environments/${id}`)
+    } catch (error) {
+      console.error(`Error fetching environment ${id}:`, error)
+      return null
+    }
+  }
+
+  const createEnvironment = async (environment: Environment): Promise<Environment | null> => {
+    try {
+      return await $fetch<Environment>(`${baseURL}/environments`, {
+        method: 'POST',
+        body: environment
+      })
+    } catch (error) {
+      console.error('Error creating environment:', error)
+      return null
+    }
+  }
+
+  const updateEnvironment = async (id: number, environment: Partial<Environment>): Promise<Environment | null> => {
+    try {
+      return await $fetch<Environment>(`${baseURL}/environments/${id}`, {
+        method: 'PUT',
+        body: environment
+      })
+    } catch (error) {
+      console.error(`Error updating environment ${id}:`, error)
+      return null
+    }
+  }
+
+  const deleteEnvironment = async (id: number): Promise<boolean> => {
+    try {
+      await $fetch(`${baseURL}/environments/${id}`, {
+        method: 'DELETE'
+      })
+      return true
+    } catch (error) {
+      console.error(`Error deleting environment ${id}:`, error)
+      return false
+    }
+  }
+
   return {
     fetchProjects,
     fetchProject,
@@ -93,6 +147,11 @@ export const useApi = () => {
     fetchDeployments,
     fetchDeployment,
     fetchProjectDeployments,
-    triggerDeploy
+    triggerDeploy,
+    fetchEnvironments,
+    fetchEnvironment,
+    createEnvironment,
+    updateEnvironment,
+    deleteEnvironment
   }
 }

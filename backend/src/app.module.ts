@@ -5,6 +5,7 @@ import { DeploymentsModule } from './deployments/deployments.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { GithubModule } from './github/github.module';
+import { EnvironmentsModule } from './environments/environments.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { GithubModule } from './github/github.module';
     PrismaModule,
     ProjectsModule,
     DeploymentsModule,
+    EnvironmentsModule,
     WebhooksModule,
   ],
 })

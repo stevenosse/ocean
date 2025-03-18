@@ -83,6 +83,71 @@
               <p class="mt-2 text-sm text-gray-500">The root folder path where the docker-compose file is located (defaults to repository root)</p>
             </div>
 
+            <!-- Build Configuration Section -->
+            <div class="pt-2 pb-1">
+              <h3 class="text-lg font-medium text-gray-900 mb-4">Build Configuration</h3>
+              
+              <!-- Install Command Field -->
+              <div class="relative mb-6">
+                <label for="installCommand" class="block text-sm font-medium text-gray-700 mb-1">Install Command</label>
+                <div class="relative">
+                  <input 
+                    type="text" 
+                    id="installCommand" 
+                    v-model="project.installCommand" 
+                    class="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base"
+                    placeholder="npm install"
+                  />
+                </div>
+                <p class="mt-2 text-sm text-gray-500">Command to install dependencies (e.g., npm install, yarn)</p>
+              </div>
+
+              <!-- Build Command Field -->
+              <div class="relative mb-6">
+                <label for="buildCommand" class="block text-sm font-medium text-gray-700 mb-1">Build Command</label>
+                <div class="relative">
+                  <input 
+                    type="text" 
+                    id="buildCommand" 
+                    v-model="project.buildCommand" 
+                    class="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base"
+                    placeholder="npm run build"
+                  />
+                </div>
+                <p class="mt-2 text-sm text-gray-500">Command to build the project (e.g., npm run build)</p>
+              </div>
+
+              <!-- Start Command Field -->
+              <div class="relative mb-6">
+                <label for="startCommand" class="block text-sm font-medium text-gray-700 mb-1">Start Command</label>
+                <div class="relative">
+                  <input 
+                    type="text" 
+                    id="startCommand" 
+                    v-model="project.startCommand" 
+                    class="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base"
+                    placeholder="npm start"
+                  />
+                </div>
+                <p class="mt-2 text-sm text-gray-500">Command to start the project (e.g., npm start, node server.js)</p>
+              </div>
+
+              <!-- Output Directory Field -->
+              <div class="relative mb-6">
+                <label for="outputDirectory" class="block text-sm font-medium text-gray-700 mb-1">Output Directory</label>
+                <div class="relative">
+                  <input 
+                    type="text" 
+                    id="outputDirectory" 
+                    v-model="project.outputDirectory" 
+                    class="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base"
+                    placeholder="dist"
+                  />
+                </div>
+                <p class="mt-2 text-sm text-gray-500">Directory where build output is located (e.g., dist, build)</p>
+              </div>
+            </div>
+
             <!-- Docker Configuration Section -->
             <div class="pt-2 pb-1">
               <h3 class="text-lg font-medium text-gray-900 mb-4">Docker Configuration</h3>
@@ -166,6 +231,7 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useApi } from '~/composables/useApi'
 import { useToast } from '~/composables/useToast'
+// useRuntimeConfig is automatically available in Nuxt 3 setup scripts
 import type { Project } from '~/types'
 
 const router = useRouter()
@@ -178,9 +244,14 @@ const project = ref<Partial<Project>>({
   name: '',
   repositoryUrl: '',
   branch: '',
+  rootFolder: '',
   dockerComposeFile: '',
   dockerServiceName: '',
   webhookSecret: '',
+  buildCommand: '',
+  startCommand: '',
+  installCommand: '',
+  outputDirectory: '',
   active: true
 })
 
