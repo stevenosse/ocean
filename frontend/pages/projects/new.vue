@@ -276,10 +276,10 @@ const validateAndSaveProject = async () => {
     if (result) {
       if (project.value.repositoryUrl?.includes('github.com')) {
         window.open(`${baseURL}/github/install?projectId=${result.id}`, '_blank')
-      } else {
-        toast.success('Project created successfully', 'Your new project is ready')
-        router.push(`/projects/${result.id}`)
       }
+      
+      toast.success('Project created successfully', 'Your new project is ready')
+      router.push(`/projects/${result.id}`)
     }
   } catch (error) {
     console.error('Error creating project:', error)

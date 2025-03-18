@@ -196,15 +196,76 @@ export class DeploymentWorkerService {
     // Create a Dockerfile if it doesn't exist
     const dockerfilePath = path.join(workingDir, 'Dockerfile');
     if (!fs.existsSync(dockerfilePath)) {
-      logs += '\nNo Dockerfile found, creating one for Node.js project\n';
+      logs += '\nNo Dockerfile found, checking project type\n';
       await this.updateDeploymentLogs(deploymentId, logs);
       
-      // Create a basic Dockerfile for Node.js projects
-      const dockerfile = this.generateNodejsDockerfile(project);
-      fs.writeFileSync(dockerfilePath, dockerfile);
+      // Check if this is a Node.js project by looking for package.json
+      const rootFolder = project.rootFolder || '';
+      const repoDir = path.join(process.cwd(), '../repos', `project-${project.id}`);
       
-      logs += `Created Dockerfile for Node.js project\n`;
-      await this.updateDeploymentLogs(deploymentId, logs);
+      // Check if package.json exists in the specified root folder
+      let packageJsonPath = path.join(repoDir, rootFolder, 'package.json');
+      
+      if (fs.existsSync(packageJsonPath)) {
+        logs += `\nFound package.json in specified root folder: ${rootFolder}\n`;
+        await this.updateDeploymentLogs(deploymentId, logs);
+      } else {
+        logs += `\nNo package.json found in specified root folder: ${rootFolder}\n`;
+        logs += 'Please make sure your root folder is set correctly in the project settings.\n';
+        logs += 'The root folder should point to the directory containing package.json.\n';
+        await this.updateDeploymentLogs(deploymentId, logs);
+        
+        // If the root folder is not specified or is the default, try to find package.json
+        if (!rootFolder || rootFolder === '/') {
+          logs += '\nAttempting to find package.json in the repository...\n';
+          await this.updateDeploymentLogs(deploymentId, logs);
+          
+          // Find all package.json files in the repository
+          const { stdout } = await execAsync(`find ${repoDir} -name "package.json" -type f`);
+          const packageJsonFiles = stdout.trim().split('\n').filter(Boolean);
+          
+          if (packageJsonFiles.length > 0) {
+            // Use the first package.json found
+            packageJsonPath = packageJsonFiles[0];
+            // Extract the relative directory from the repo root
+            const packageJsonDir = path.dirname(packageJsonPath).replace(repoDir, '').replace(/^\//, '');
+            
+            logs += `\nFound package.json in subdirectory: ${packageJsonDir}\n`;
+            await this.updateDeploymentLogs(deploymentId, logs);
+            
+            // Update the project's root folder
+            project.rootFolder = '/' + packageJsonDir;
+            logs += `\nUpdating project root folder to: ${project.rootFolder}\n`;
+            await this.updateDeploymentLogs(deploymentId, logs);
+            
+            // Save the updated root folder to the database
+            await this.prisma.project.update({
+              where: { id: project.id },
+              data: { rootFolder: project.rootFolder }
+            });
+          } else {
+            logs += '\nNo package.json found in the repository.\n';
+            await this.updateDeploymentLogs(deploymentId, logs);
+          }
+        }
+      }
+      
+      if (fs.existsSync(packageJsonPath)) {
+        logs += '\nFound package.json, creating Dockerfile for Node.js project\n';
+        await this.updateDeploymentLogs(deploymentId, logs);
+        
+        // Create a basic Dockerfile for Node.js projects
+        const dockerfile = this.generateNodejsDockerfile(project);
+        fs.writeFileSync(dockerfilePath, dockerfile);
+        
+        logs += `Created Dockerfile for Node.js project\n`;
+        await this.updateDeploymentLogs(deploymentId, logs);
+      } else {
+        logs += '\nNo package.json found. Cannot automatically create Dockerfile.\n';
+        logs += 'Please add a Dockerfile to your repository.\n';
+        await this.updateDeploymentLogs(deploymentId, logs);
+        throw new Error('No package.json found and no Dockerfile provided. Cannot deploy this project.');
+      }
     } else {
       logs += '\nUsing existing Dockerfile\n';
       await this.updateDeploymentLogs(deploymentId, logs);
@@ -229,9 +290,16 @@ export class DeploymentWorkerService {
     
     try {
       // Build the Docker image
-      const { stdout: buildStdout, stderr: buildStderr } = await execAsync(
-        `cd ${workingDir} && docker build -t ${imageName} .`
-      );
+      // Always build from the working directory which already includes the root folder
+      const buildCommand = `cd ${workingDir} && docker build -t ${imageName} .`;
+      
+      logs += `\nBuilding Docker image from directory: ${workingDir}\n`;
+      await this.updateDeploymentLogs(deploymentId, logs);
+      
+      logs += `\nRunning build command: ${buildCommand}\n`;
+      await this.updateDeploymentLogs(deploymentId, logs);
+      
+      const { stdout: buildStdout, stderr: buildStderr } = await execAsync(buildCommand);
       
       logs += buildStdout + buildStderr;
       await this.updateDeploymentLogs(deploymentId, logs);
@@ -284,51 +352,76 @@ export class DeploymentWorkerService {
     const installCommand = project.installCommand || 'npm install';
     const buildCommand = project.buildCommand || '';
     const startCommand = project.startCommand || 'npm start';
-    const outputDirectory = project.outputDirectory || '';
     
-    // Generate the Dockerfile content
+    // Get the root folder to determine if we need to use a subdirectory
+    const rootFolder = project.rootFolder || '/';
+    const isSubDir = rootFolder && rootFolder !== '/';
+    
+    // Extract the subdirectory path without leading slash
+    const subDirPath = isSubDir ? rootFolder.replace(/^\//, '') : '';
+    
+    // Generate a simple Dockerfile
     let dockerfile = `FROM node:${nodeVersion}-alpine
 
-`;
-    dockerfile += `WORKDIR /app
+WORKDIR /app
 
 `;
-    dockerfile += `# Copy package.json and package-lock.json
-`;
-    dockerfile += `COPY package*.json ./
+    
+    // Copy package files first (for better layer caching)
+    if (isSubDir) {
+      dockerfile += `# Copy package.json and package-lock.json from the correct subdirectory
+COPY ${subDirPath}/package*.json ./
 
 `;
+    } else {
+      dockerfile += `# Copy package.json and package-lock.json
+COPY package*.json ./
+
+`;
+    }
+    
+    // Install dependencies
     dockerfile += `# Install dependencies
-`;
-    dockerfile += `RUN ${installCommand}
+RUN ${installCommand}
 
 `;
-    dockerfile += `# Copy the rest of the application
-`;
-    dockerfile += `COPY . .
+    
+    // Copy the rest of the application
+    if (isSubDir) {
+      dockerfile += `# Copy the rest of the application from the correct subdirectory
+COPY ${subDirPath}/. .
 
 `;
+    } else {
+      dockerfile += `# Copy the rest of the application
+COPY . .
+
+`;
+    }
     
     // Add build command if specified
     if (buildCommand) {
       dockerfile += `# Build the application
-`;
-      dockerfile += `RUN ${buildCommand}
+RUN ${buildCommand}
 
 `;
     }
     
     // Expose port 3000 by default for Node.js applications
     dockerfile += `# Expose the port the app runs on
+EXPOSE 3000
+
 `;
-    dockerfile += `EXPOSE 3000
+    
+    // Add environment variable
+    dockerfile += `# Set environment to production
+ENV NODE_ENV=production
 
 `;
     
     // Add start command
     dockerfile += `# Start the application
-`;
-    dockerfile += `CMD ${startCommand.startsWith('[') ? startCommand : `["sh", "-c", "${startCommand}"]`}
+CMD ${startCommand.startsWith('[') ? startCommand : `["sh", "-c", "${startCommand}"]`}
 `;
     
     return dockerfile;
