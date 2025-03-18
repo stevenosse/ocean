@@ -38,3 +38,9 @@ Ocean is a deployment automation tool that monitors GitHub repositories and auto
 ## License
 
 MIT
+
+other things to handle:
+- env variables
+- script to launch the app (backend and frontend) and expose via ngrok (domain: dove-picked-internally.ngrok-free.app)
+- deploy the app in a container
+- manage database (only postgres will be supported)

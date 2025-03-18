@@ -12,25 +12,41 @@ export class GithubController {
   @Get('install')
   @Redirect()
   async installApp(@Query('projectId') projectId: string) {
+    if (!projectId) {
+      throw new Error('Missing project ID');
+    }
+    
     const project = await this.projectsService.findOne(+projectId);
+    if (!project) {
+      throw new Error('Project not found');
+    }
+    
     const { owner, repo } = this.githubService.extractOwnerAndRepo(project.repositoryUrl);
     
-    // Get installation URL from GitHub service
-    const installationUrl = this.githubService.getInstallationUrl();
+    // Get installation URL from GitHub service and append state parameter with project ID
+    const baseUrl = this.githubService.getInstallationUrl();
+    const installationUrl = `${baseUrl}?state=${projectId}`;
     
     return { url: installationUrl, statusCode: 302 };
   }
 
   @Get('callback')
-  async handleCallback(@Query('installation_id') installationId: string, @Query('projectId') projectId: string) {
-    if (!installationId || !projectId) {
+  @Redirect()
+  async handleCallback(
+    @Query('installation_id') installationId: string, 
+    @Query('state') state: string
+  ) {
+    if (!installationId || !state) {
       throw new Error('Missing required parameters');
     }
+
+    // The state parameter contains the project ID
+    const projectId = state;
 
     // Update project with installation ID
     await this.projectsService.update(+projectId, { githubInstallationId: +installationId });
 
-    // Redirect back to project page
+    // Redirect back to project page in the frontend
     return { url: `/projects/${projectId}`, statusCode: 302 };
   }
 }

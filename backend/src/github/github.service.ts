@@ -59,7 +59,16 @@ export class GithubService {
   }
 
   getInstallationUrl(): string {
-    return `https://github.com/apps/${githubConfig.appId}/installations/new`;
+    // GitHub requires the app's slug name, not the numeric ID
+    if (!githubConfig.appSlug) {
+      console.warn('GitHub App slug is not configured. Using default value "ocean-deploy"');
+      console.warn('Set GITHUB_APP_SLUG in your .env file to fix this issue');
+    }
+    
+    const appSlug = githubConfig.appSlug || 'ocean-deploy';
+    const url = `https://github.com/apps/${appSlug}/installations/new`;
+    console.log(`GitHub installation URL: ${url}`);
+    return url;
   }
 
   async getInstallationId(owner: string, repo: string): Promise<number | null> {
