@@ -58,6 +58,23 @@ export class DeploymentWorkerService {
       }
 
       const repoDir = path.join(process.cwd(), '../repos', `project-${project.id}`);
+      let logs = '';
+
+      // For all deployments, delete the existing repository first to ensure a clean state
+      if (fs.existsSync(repoDir)) {
+        logs = `Deleting existing repository for clean deployment...\n`;
+        await this.updateDeploymentLogs(deployment.id, logs);
+        
+        try {
+          // Use rimraf-like approach with fs.rmSync for recursive directory removal
+          fs.rmSync(repoDir, { recursive: true, force: true });
+          logs += `Successfully deleted existing repository.\n`;
+        } catch (error) {
+          logs += `Warning: Failed to delete repository: ${error.message}\n`;
+          // Continue with deployment even if deletion fails
+        }
+        await this.updateDeploymentLogs(deployment.id, logs);
+      }
 
       // Create repo directory if it doesn't exist
       if (!fs.existsSync(repoDir)) {
@@ -76,7 +93,7 @@ export class DeploymentWorkerService {
         }
 
         const cloneCommand = `git clone ${repoUrl} ${repoDir}`;
-        let logs = `Cloning repository: ${project.repositoryUrl}\n`;
+        logs += `Cloning repository: ${project.repositoryUrl}\n`;
         await this.updateDeploymentLogs(deployment.id, logs);
 
         const { stdout, stderr } = await execAsync(cloneCommand);
@@ -84,7 +101,7 @@ export class DeploymentWorkerService {
         await this.updateDeploymentLogs(deployment.id, logs);
       } else {
         // Pull latest changes
-        let logs = `Pulling latest changes from ${project.repositoryUrl}\n`;
+        logs += `Pulling latest changes from ${project.repositoryUrl}\n`;
         await this.updateDeploymentLogs(deployment.id, logs);
 
         let pullCommand = `cd ${repoDir} && git pull`;
@@ -395,6 +412,7 @@ export class DeploymentWorkerService {
       envVars['PORT'] = port.toString();
       envVars['OCEAN_ASSIGNED_PORT'] = port.toString();
       envVars['OCEAN_APP_URL'] = `http://localhost:${port}`;
+      envVars['HOST'] = '0.0.0.0';  // Ensure the app binds to all interfaces
       
       // Update the .env file with the new port
       const updatedEnvFileContent = Object.entries(envVars)
@@ -412,6 +430,8 @@ export class DeploymentWorkerService {
       });
 
       // Run the container with resource limits and restart policy for isolation and recovery
+      // Using --network=host to ensure the application is accessible from outside the container
+      // Note: When using --network=host, the -p flag is not needed but we keep it for clarity
       const { stdout: runStdout, stderr: runStderr } = await execAsync(
         `docker run -d --name ${containerName} \
         --restart unless-stopped \
@@ -421,20 +441,23 @@ export class DeploymentWorkerService {
         --pids-limit=100 \
         --security-opt=no-new-privileges \
         --cap-drop=ALL \
-        --network=bridge \
+        --network=host \
         --health-cmd="wget --no-verbose --tries=3 --timeout=5 --spider http://localhost:${port} || curl -s --head http://localhost:${port} || exit 1" \
         --health-interval=30s \
         --health-timeout=10s \
         --health-retries=3 \
-        -p ${port}:${port} \
         -e PORT=${port} \
         -e OCEAN_ASSIGNED_PORT=${port} \
+        -e HOST=0.0.0.0 \
         ${envArgs} ${imageName}`
       );
 
       logs += runStdout + runStderr;
       logs += `\nContainer ${containerName} is now running on port ${port} with resource limits and health monitoring\n`;
       logs += `\nYour application is accessible at: http://localhost:${port}/\n`;
+      logs += `\nIMPORTANT: Make sure your application listens on 0.0.0.0 (all interfaces) and not just localhost.\n`;
+      logs += `\nFor Express.js apps, use: app.listen(process.env.PORT, '0.0.0.0', () => {...})\n`;
+      logs += `\nFor Next.js apps, add to next.config.js: { server: { host: '0.0.0.0' } }\n`;
       
       // Verify that the container is running correctly
       logs += `\nVerifying container status...\n`;
@@ -529,6 +552,9 @@ export class DeploymentWorkerService {
       logs += `2. Verify that your application listens on the correct port (default: 3000)\n`;
       logs += `3. Make sure your Dockerfile is correctly configured\n`;
       logs += `4. Check that your start command is correct\n`;
+      logs += `5. Ensure your application listens on 0.0.0.0 (all interfaces) and not just localhost\n`;
+      logs += `   - For Express.js: app.listen(process.env.PORT, '0.0.0.0', () => {})\n`;
+      logs += `   - For Next.js: In next.config.js add { server: { host: '0.0.0.0' } }\n`;
 
       await this.updateDeploymentLogs(deploymentId, logs);
 
@@ -602,10 +628,34 @@ EXPOSE \${PORT:-3000}
 
 `;
 
-    // Add environment variables
+    // Add environment variables with HOST set to 0.0.0.0 to ensure the app listens on all interfaces
     dockerfile += `# Set environment variables
 ENV NODE_ENV=production
 ENV PORT=\${PORT:-3000}
+ENV HOST=0.0.0.0
+
+# Create a script to ensure the app listens on all interfaces
+RUN echo '#!/bin/sh' > /tmp/fix-host-binding.sh && \
+    echo '' >> /tmp/fix-host-binding.sh && \
+    echo '# Modify Express.js apps to listen on all interfaces' >> /tmp/fix-host-binding.sh && \
+    echo 'find . -type f -name "*.js" -exec sed -i "s/listen(\\s*\\(process\\.env\\.PORT\\|[0-9]\\+\\))/listen(\\1, \"0.0.0.0\")/g" {} \\;' >> /tmp/fix-host-binding.sh && \
+    echo '' >> /tmp/fix-host-binding.sh && \
+    echo '# Modify Next.js config if it exists' >> /tmp/fix-host-binding.sh && \
+    echo 'if [ -f next.config.js ]; then' >> /tmp/fix-host-binding.sh && \
+    echo '  if grep -q "server" next.config.js; then' >> /tmp/fix-host-binding.sh && \
+    echo '    sed -i "s/server:\\s*{/server: { host: \"0.0.0.0\",/g" next.config.js' >> /tmp/fix-host-binding.sh && \
+    echo '  else' >> /tmp/fix-host-binding.sh && \
+    echo '    sed -i "s/module.exports\\s*=\\s*{/module.exports = { server: { host: \"0.0.0.0\" },/g" next.config.js' >> /tmp/fix-host-binding.sh && \
+    echo '  fi' >> /tmp/fix-host-binding.sh && \
+    echo 'fi' >> /tmp/fix-host-binding.sh && \
+    echo '' >> /tmp/fix-host-binding.sh && \
+    echo '# Create Next.js config if needed' >> /tmp/fix-host-binding.sh && \
+    echo 'if [ ! -f next.config.js ] && grep -q "\"next\"" package.json; then' >> /tmp/fix-host-binding.sh && \
+    echo '  echo "module.exports = { server: { host: \"0.0.0.0\" } };" > next.config.js' >> /tmp/fix-host-binding.sh && \
+    echo 'fi' >> /tmp/fix-host-binding.sh && \
+    chmod +x /tmp/fix-host-binding.sh && \
+    /tmp/fix-host-binding.sh && \
+    rm /tmp/fix-host-binding.sh
 
 `;
 

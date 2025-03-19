@@ -50,7 +50,7 @@
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ env.key }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 <span v-if="env.isSecret" class="font-mono">••••••••</span>
-                <span v-else class="font-mono">{{ env.value }}</span>
+                <span v-else class="font-mono">{{ env.value.length > 6 ? env.value.substring(0, 6) + '•'.repeat(env.value.length - 6) : env.value }}</span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 space-x-2">
                 <button 
