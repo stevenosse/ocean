@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { DeploymentLogsService } from './deployment-logs.service';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { ContainerMonitorService } from './container-monitor.service';
 
 const execAsync = promisify(exec);
 
@@ -12,6 +13,7 @@ const execAsync = promisify(exec);
 export class DockerService {
     constructor(
         private logsService: DeploymentLogsService,
+        private containerMonitoringService: ContainerMonitorService,
         private prisma: PrismaService,
     ) { }
 
@@ -49,10 +51,8 @@ export class DockerService {
     ): Promise<void> {
         let logs = '';
 
-        // Always create a new Dockerfile for each deployment to ensure it reflects current configuration
         const dockerfilePath = path.join(workingDir, 'Dockerfile');
 
-        // Remove existing Dockerfile if it exists
         if (fs.existsSync(dockerfilePath)) {
             logs = '\nRemoving existing Dockerfile to create a fresh one with current configuration\n';
             fs.unlinkSync(dockerfilePath);
@@ -157,7 +157,7 @@ export class DockerService {
         await updateLogs(logs);
 
         // Build and run the Docker container
-        await this.buildAndRunContainer(deploymentId, project, workingDir, processedEnvVars.envVars, updateLogs, updateDeployment);
+        await this.buildAndRunContainer(project, workingDir, processedEnvVars.envVars, updateLogs, updateDeployment);
     }
 
     /**
@@ -380,7 +380,6 @@ CMD ${startCommand}`;
     }
 
     private async buildAndRunContainer(
-        deploymentId: number,
         project: any,
         workingDir: string,
         envVars: Record<string, string>,
@@ -388,57 +387,36 @@ CMD ${startCommand}`;
         updateDeployment: (data: any) => Promise<any>
     ): Promise<void> {
         let logs = '';
-        let port: number;
-        let containerEnv: Record<string, string>;
         const containerName = `ocean-project-${project.id}`;
         const imageName = `ocean-project-${project.id}:latest`;
 
         try {
-            // Clean up any existing container
-            try {
-                await execAsync(`docker stop ${containerName} || true`);
-                await execAsync(`docker rm ${containerName} || true`);
-                logs += '\nCleaned up existing container\n';
-            } catch (error) {
-                this.logsService.warn(`Error cleaning up container: ${error.message}`, 'Docker Container');
-            }
+            // Clean up existing container
+            await execAsync(`docker stop ${containerName} || true`);
+            await execAsync(`docker rm ${containerName} || true`);
+            logs += '\nCleaned up existing container\n';
             await updateLogs(logs);
 
-            logs += `\nBuilding Docker image: ${imageName}\n`;
-            await updateLogs(logs);
-            // Build the Docker image
-            // If we have a root folder specified, we need to build from that subdirectory
+            // Build Docker image
             const rootFolder = project.rootFolder || '/';
             const isSubDir = rootFolder && rootFolder !== '/';
-
-            let buildCommand;
+            logs += `\nBuilding Docker image: ${imageName} from ${workingDir}\n`;
             if (isSubDir) {
-                // If we have a subdirectory, we need to build from that directory
-                // This ensures the Docker context is correct
-                buildCommand = `cd ${workingDir} && docker build -t ${imageName} .`;
-                logs += `\nBuilding Docker image from subdirectory: ${workingDir}\n`;
-            } else {
-                // Otherwise, build from the working directory
-                buildCommand = `cd ${workingDir} && docker build -t ${imageName} .`;
-                logs += `\nBuilding Docker image from directory: ${workingDir}\n`;
+                logs += `(Using subdirectory specified by rootFolder: ${rootFolder})\n`;
             }
-
             await updateLogs(logs);
 
-            logs += `\nRunning build command: ${buildCommand}\n`;
-            await updateLogs(logs);
-
+            const buildCommand = `cd ${workingDir} && docker build -t ${imageName} .`;
             const { stdout: buildStdout, stderr: buildStderr } = await execAsync(buildCommand);
-
             logs += buildStdout + buildStderr;
             await updateLogs(logs);
 
-            // Find an available port and configure environment
+            // Find available port
             const port = await this.findAvailablePort(3000, 3999);
             logs += `\nAssigned port ${port} to container\n`;
             await updateLogs(logs);
 
-            // Update environment variables with container configuration
+            // Prepare environment variables
             const containerEnv = {
                 ...envVars,
                 PORT: port.toString(),
@@ -448,215 +426,133 @@ CMD ${startCommand}`;
                 OCEAN_APP_URL: `http://localhost:${port}`
             };
 
-            // Create environment arguments for docker run
             const envArgs = Object.entries(containerEnv)
                 .map(([key, value]) => `-e ${key}=${value}`)
                 .join(' ');
 
-            // Run container with resource limits and health monitoring
+            // Run container with improved health check
             const runCommand = `docker run -d --name ${containerName} \
-        --restart unless-stopped \
-        --memory=512m \
-        --cpus=0.5 \
-        --pids-limit=100 \
-        --add-host=host.docker.internal:host-gateway \
-        -p ${port}:${port} \
-        --health-cmd="curl -f http://localhost:${port}/health || wget -q --spider http://localhost:${port}/health || exit 1" \
-        --health-interval=30s \
-        --health-timeout=10s \
-        --health-retries=3 \
-        ${envArgs} ${imageName}`;
+                --restart unless-stopped \
+                --memory=512m \
+                --cpus=0.5 \
+                --add-host=host.docker.internal:host-gateway \
+                -p ${port}:${port} \
+                --health-cmd="curl --fail --silent http://localhost:${port}/health || curl --fail --silent http://localhost:${port} || exit 1" \
+                --health-interval=10s \
+                --health-timeout=5s \
+                --health-retries=6 \
+                --health-start-period=30s \
+                ${envArgs} ${imageName}`;
 
-            const { stdout: runStdout, stderr: runStderr } = await execAsync(runCommand);
-            logs += runStdout + runStderr;
+            const { stdout: runStdout } = await execAsync(runCommand);
+            logs += runStdout;
             await updateLogs(logs);
 
             // Wait for container to be healthy
             logs += '\nWaiting for container to be healthy...\n';
             await updateLogs(logs);
 
-            // Wait for container to start and become healthy
-            let healthy = false;
-            const maxRetries = 10;
-            const healthCheckInterval = 3000; // 3 seconds
+            const MAX_RETRIES = 3;
+            const RETRY_DELAY = 10000; // 10 seconds
             const startTime = Date.now();
+            let isHealthy = false;
+            let retries = 0;
 
-            for (let i = 0; i < maxRetries; i++) {
-                try {
-                    // First check if container is running
-                    const { stdout: statusStdout } = await execAsync(`docker inspect --format='{{.State.Status}}' ${containerName}`);
-                    if (statusStdout.trim() !== 'running') {
-                        logs += `\nContainer status: ${statusStdout.trim()}\n`;
-                        await updateLogs(logs);
-                        continue;
-                    }
+            // Check if container is running
+            const { stdout } = await execAsync(`docker inspect --format='{{json .State}}' ${containerName}`);
+            const containerState = JSON.parse(stdout.trim());
+            const containerStatus = containerState.Status;
 
-                    // Then check health status
-                    const { stdout: healthStdout } = await execAsync(`docker inspect --format='{{.State.Health.Status}}' ${containerName}`);
-                    const healthStatus = healthStdout.trim();
-                    logs += `\nHealth check attempt ${i + 1}/${maxRetries}: ${healthStatus}\n`;
+            logs += `\nContainer status: ${containerStatus}, Health: ${containerState.Health?.Status || 'no healthcheck'}\n`;
+            await updateLogs(logs);
+
+            if (containerStatus !== 'running') {
+                throw new Error(`Container ${containerName} is not running (status: ${containerStatus})`);
+            }
+
+            // Check Docker's built-in health status if available
+            if (containerState.Health) {
+                const healthStatus = containerState.Health.Status;
+                if (healthStatus === 'healthy') {
+                    logs += `\nContainer is healthy according to Docker healthcheck\n`;
                     await updateLogs(logs);
+                    return;
+                } else if (healthStatus === 'unhealthy') {
+                    const { stdout: healthLog } = await execAsync(
+                        `docker inspect --format='{{json .State.Health.Log}}' ${containerName}`
+                    );
+                    const healthLogs = JSON.parse(healthLog);
+                    if (healthLogs.length > 0) {
+                        const lastCheck = healthLogs[healthLogs.length - 1];
+                        logs += `\nLast health check output: ${lastCheck.Output}\n`;
+                        await updateLogs(logs);
+                    }
+                    throw new Error(`Container is unhealthy according to Docker healthcheck`);
+                }
+            }
 
-                    if (healthStatus === 'healthy') {
-                        healthy = true;
-                        break;
-                    } else if (healthStatus === 'unhealthy') {
-                        // Get the last health check log
-                        const { stdout: healthLog } = await execAsync(`docker inspect --format='{{json .State.Health.Log}}' ${containerName}`);
-                        const healthLogs = JSON.parse(healthLog);
-                        if (healthLogs.length > 0) {
-                            const lastCheck = healthLogs[healthLogs.length - 1];
-                            logs += `\nHealth check failed: ${lastCheck.Output}\n`;
+            // Manual health check using HTTP endpoints
+            while (!isHealthy && retries < MAX_RETRIES) {
+                try {
+                    // Try health endpoint first (expecting 2xx/3xx)
+                    const { stdout: healthResponse } = await execAsync(
+                        `curl --silent --connect-timeout 5 --max-time 10 -w "%{http_code}" http://localhost:${port}/health`
+                    );
+                    const healthStatusCode = healthResponse.trim().slice(-3);
+
+                    if (healthStatusCode.match(/^[23]\d\d$/)) {
+                        isHealthy = true;
+                        logs += `\nContainer is healthy (status ${healthStatusCode} on /health)\n`;
+                        await updateLogs(logs);
+                    } else {
+                        // Fallback to root path, accepting 2xx/3xx or 404
+                        const { stdout: rootResponse } = await execAsync(
+                            `curl --silent --connect-timeout 5 --max-time 10 -w "%{http_code}" http://localhost:${port}`
+                        );
+                        const rootStatusCode = rootResponse.trim().slice(-3);
+
+                        if (rootStatusCode.match(/^[23]\d\d$/) || rootStatusCode === '404') {
+                            isHealthy = true;
+                            logs += `\nContainer is healthy (status ${rootStatusCode} on /)\n`;
                             await updateLogs(logs);
+                        } else {
+                            throw new Error(`Unexpected status code: ${rootStatusCode}`);
                         }
                     }
                 } catch (error) {
-                    this.logsService.warn(`Health check error: ${error.message}`, 'Docker Container');
-                    logs += `\nHealth check error: ${error.message}\n`;
+                    retries++;
+                    logs += `\nHealth check attempt ${retries}/${MAX_RETRIES} failed: ${error.message}\n`;
                     await updateLogs(logs);
+                    if (retries < MAX_RETRIES) {
+                        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+                    }
                 }
-
-                await new Promise(resolve => setTimeout(resolve, healthCheckInterval));
             }
 
-            if (!healthy) {
-                const timeoutSeconds = ((Date.now() - startTime) / 1000).toFixed(1);
-                throw new Error(`Container failed to become healthy within ${timeoutSeconds}s timeout. Check container logs for details.`);
+            if (!isHealthy) {
+                throw new Error(`Container is not responding on port ${port} after ${MAX_RETRIES} attempts`);
             }
 
-            // Update deployment with container port
+            // Update deployment info
             await updateDeployment({
-                containerPort: port
+                containerName,
+                containerPort: port,
+                monitoringEnabled: true
             });
 
-            logs += `\nContainer is healthy and running on port ${port}\n`;
+            // Update .env file
+            const envFileContent = Object.entries(containerEnv)
+                .map(([key, value]) => `${key}=${value}`)
+                .join('\n');
+            fs.writeFileSync(path.join(workingDir, '.env'), envFileContent);
+            logs += `\nUpdated .env file with container configuration\n`;
             await updateLogs(logs);
 
         } catch (error) {
             this.logsService.error(`Docker deployment failed: ${error.message}`, error, 'Docker Container');
+            logs += `\nError: ${error.message}\n`;
+            await updateLogs(logs);
             throw error;
         }
-
-        // Update deployment with container information
-        await updateDeployment({
-            containerName,
-            containerPort: port,
-            monitoringEnabled: true
-        });
-
-        // Update .env file with container configuration
-        const envFileContent = Object.entries(containerEnv)
-            .map(([key, value]) => `${key}=${value}`)
-            .join('\n');
-
-        fs.writeFileSync(path.join(workingDir, '.env'), envFileContent);
-        logs += `\nUpdated .env file with container configuration\n`;
-
-        // Add the port to the environment variables for the application
-        envVars['PORT'] = port.toString();
-        envVars['OCEAN_ASSIGNED_PORT'] = port.toString();
-        envVars['OCEAN_APP_URL'] = `http://localhost:${port}`;
-        envVars['HOST'] = '0.0.0.0';  // Ensure the app binds to all interfaces
-
-        // Update the .env file with the new port
-        const updatedEnvFileContent = Object.entries(envVars)
-            .map(([key, value]) => `${key}=${value}`)
-            .join('\n');
-
-        fs.writeFileSync(path.join(workingDir, '.env'), updatedEnvFileContent);
-        logs += `\nUpdated .env file with assigned port: ${port}\n`;
-        await updateLogs(logs);
-
-        // Save the port to the database for future reference
-        await updateDeployment({
-            containerPort: port
-        });
-
-        // Process all environment variables to replace localhost with host.docker.internal for database connections
-        const processedEnvVars = this.processEnvironmentVariables(envVars, logs, updateLogs);
-
-        // If any database connections were updated, update the environment file
-        if (processedEnvVars.dbConnectionsUpdated) {
-            // Update the .env file with the modified values
-            const updatedEnvFileContent = Object.entries(processedEnvVars.envVars)
-                .map(([key, value]) => `${key}=${value}`)
-                .join('\n');
-
-            fs.writeFileSync(path.join(workingDir, '.env'), updatedEnvFileContent);
-            logs += `Updated .env file with modified database connection strings.\n`;
-            await updateLogs(logs);
-        }
-
-        // Create environment variables arguments for docker run
-        const envArgs = Object.entries(processedEnvVars.envVars)
-            .map(([key, value]) => `-e ${key}=${value}`)
-            .join(' ');
-
-        // Run the container with resource limits and restart policy for isolation and recovery
-        // Using --add-host to map host.docker.internal to the host machine's IP
-        // This ensures the container can connect to services running on the host
-        const { stdout: runStdout, stderr: runStderr } = await execAsync(
-            `docker run -d --name ${containerName} \
-        --restart unless-stopped \
-        --memory=512m \
-        --memory-swap=1g \
-        --cpus=0.5 \
-        --pids-limit=100 \
-        --security-opt=no-new-privileges \
-        --cap-drop=ALL \
-        --add-host=host.docker.internal:host-gateway \
-        -p ${port}:${port} \
-        --health-cmd="wget --no-verbose --tries=3 --timeout=5 --spider http://localhost:${port} || curl -s --head http://localhost:${port} || exit 1" \
-        --health-interval=30s \
-        --health-timeout=10s \
-        --health-retries=3 \
-        ${envArgs} \
-        ${imageName}`
-        );
-
-        logs += runStdout + runStderr;
-        await updateLogs(logs);
-
-        // Wait for container to be healthy
-        logs += '\nWaiting for container to be healthy...\n';
-        await updateLogs(logs);
-
-        let isHealthy = false;
-        let retries = 0;
-        const maxRetries = 10;
-
-        while (!isHealthy && retries < maxRetries) {
-            try {
-                const { stdout: healthStatus } = await execAsync(`docker inspect --format='{{.State.Health.Status}}' ${containerName}`);
-                if (healthStatus.trim() === 'healthy') {
-                    isHealthy = true;
-                    logs += '\nContainer is healthy and ready to accept connections\n';
-                } else {
-                    retries++;
-                    await new Promise(resolve => setTimeout(resolve, 3000));
-                }
-            } catch (error) {
-                retries++;
-                await new Promise(resolve => setTimeout(resolve, 3000));
-            }
-        }
-
-        if (!isHealthy) {
-            throw new Error('Container failed to become healthy within the timeout period');
-        }
-
-        await updateLogs(logs);
-
-        // Try to access the application
-        try {
-            await this.checkPortAccessible('localhost', port, 5000);
-            logs += `\nApplication is accessible at http://localhost:${port}\n`;
-            await updateLogs(logs);
-        } catch (error) {
-            logs += `\nWarning: Application port ${port} is not responding: ${error.message}\n`;
-            await updateLogs(logs);
-            // Don't throw error here, as the container might still be starting up
-        }
-
     }
 }

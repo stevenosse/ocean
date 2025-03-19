@@ -9,6 +9,7 @@ import { GithubService } from 'src/github/github.service';
 import { EnvironmentsModule } from '../environments/environments.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { DockerService } from './docker.service';
+import { ContainerHealthService } from './container-health.service';
 
 @Module({
   imports: [
@@ -17,7 +18,15 @@ import { DockerService } from './docker.service';
     ScheduleModule.forRoot(),
   ],
   controllers: [DeploymentsController],
-  providers: [DeploymentsService, DockerService, DeploymentWorkerService, ContainerMonitorService, GithubService, DeploymentLogsService],
+  providers: [
+    DeploymentsService,
+    DockerService,
+    ContainerHealthService,
+    DeploymentWorkerService,
+    ContainerMonitorService,
+    GithubService,
+    DeploymentLogsService
+  ],
   exports: [DeploymentsService, DeploymentLogsService],
 })
 export class DeploymentsModule { }

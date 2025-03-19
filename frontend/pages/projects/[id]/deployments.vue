@@ -1,0 +1,93 @@
+<template>
+  <div>
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-3xl font-bold text-gray-900">Project Deployments</h1>
+      <NuxtLink
+        :to="`/projects/${projectId}`"
+        class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+      >
+        Back to Project
+      </NuxtLink>
+    </div>
+
+    <div v-if="loading" class="text-center py-10">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <p class="mt-2 text-gray-500">Loading deployments...</p>
+    </div>
+
+    <div v-else-if="deployments.length === 0" class="bg-white shadow overflow-hidden sm:rounded-lg">
+      <div class="px-4 py-12 text-center">
+        <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+        </svg>
+        <h3 class="mt-2 text-lg font-medium text-gray-900">No deployments</h3>
+        <p class="mt-1 text-sm text-gray-500">This project hasn't been deployed yet.</p>
+      </div>
+    </div>
+
+    <div v-else class="bg-white shadow overflow-hidden sm:rounded-lg">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Commit</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Started</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completed</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <tr v-for="deployment in deployments" :key="deployment.id">
+            <td class="px-6 py-4 whitespace-nowrap text-sm">
+              <span :class="{
+                'px-2 inline-flex text-xs leading-5 font-semibold rounded-full': true,
+                'bg-green-100 text-green-800': deployment.status === 'completed',
+                'bg-yellow-100 text-yellow-800': deployment.status === 'pending' || deployment.status === 'in_progress',
+                'bg-red-100 text-red-800': deployment.status === 'failed'
+              }">
+                {{ deployment.status }}
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <span class="font-mono">{{ deployment.commitHash.substring(0, 7) }}</span>
+              <span v-if="deployment.commitMessage" class="ml-2 text-xs">{{ deployment.commitMessage }}</span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              {{ new Date(deployment.startedAt).toLocaleString() }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              {{ deployment.completedAt ? new Date(deployment.completedAt).toLocaleString() : '-' }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <NuxtLink :to="`/deployments/${deployment.id}`" class="text-blue-600 hover:text-blue-900">View details</NuxtLink>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</template>
+
+<script lang="ts" setup>
+import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { useApi } from '~/composables/useApi'
+import type { Deployment } from '~/types'
+
+const route = useRoute()
+const api = useApi()
+const projectId = route.params.id as string
+const deployments = ref<Deployment[]>([])
+const loading = ref(true)
+
+onMounted(async () => {
+  try {
+    // Fetch only deployments for this project
+    deployments.value = await api.fetchProjectDeployments(parseInt(projectId))
+  } catch (error) {
+    console.error('Error fetching project deployments:', error)
+  } finally {
+    loading.value = false
+  }
+})
+</script>

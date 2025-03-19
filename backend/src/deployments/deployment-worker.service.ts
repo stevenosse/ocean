@@ -4,12 +4,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { GithubService } from '../github/github.service';
 import { EnvironmentsService } from '../environments/environments.service';
 import { DockerService } from './docker.service';
+import { ContainerMonitorService } from './container-monitor.service';
 import { DeploymentStatus, Deployment } from '@prisma/client';
-import { exec, spawn } from 'child_process';
+import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as os from 'os';
 
 const execAsync = promisify(exec);
 
@@ -24,6 +24,7 @@ export class DeploymentWorkerService {
     private environmentsService: EnvironmentsService,
     private logsService: DeploymentLogsService,
     private dockerService: DockerService,
+    private containerMonitorService: ContainerMonitorService,
   ) { }
 
   async startDeployment(deployment: Deployment): Promise<void> {
@@ -175,12 +176,14 @@ export class DeploymentWorkerService {
       const updatedLogs = `${currentDeployment?.logs || ''}\n\n${successMessage}`;
 
       // Update the deployment
+      // Update deployment status and enable monitoring
       await this.prisma.deployment.update({
         where: { id: deployment.id },
         data: {
           status: DeploymentStatus.completed,
           completedAt: new Date(),
-          logs: updatedLogs
+          logs: updatedLogs,
+          monitoringEnabled: true
         }
       });
 
