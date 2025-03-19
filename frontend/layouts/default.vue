@@ -1,16 +1,16 @@
 <template>
   <div class="min-h-screen bg-gray-100">
-    <nav class="bg-blue-600 shadow-lg">
+    <nav class="bg-gradient-to-r from-blue-600 to-blue-700 shadow-xl border-b border-blue-800">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
-          <div class="flex">
+          <div class="flex items-stretch">
             <div class="flex-shrink-0 flex items-center">
-              <NuxtLink to="/" class="text-white text-xl font-bold">Ocean</NuxtLink>
+              <NuxtLink to="/" class="text-white text-2xl font-bold tracking-tight hover:text-blue-100 transition duration-150">Ocean</NuxtLink>
             </div>
-            <div class="hidden sm:ml-6 sm:flex sm:items-center">
-              <NuxtLink to="/" class="px-3 py-2 rounded-md text-sm font-medium text-white hover:bg-blue-700">Dashboard</NuxtLink>
-              <NuxtLink to="/projects" class="px-3 py-2 rounded-md text-sm font-medium text-white hover:bg-blue-700">Projects</NuxtLink>
-              <NuxtLink to="/deployments" class="px-3 py-2 rounded-md text-sm font-medium text-white hover:bg-blue-700">Deployments</NuxtLink>
+            <div class="hidden sm:ml-8 sm:flex sm:items-center space-x-1">
+              <NuxtLink to="/" class="px-4 py-2 rounded-md text-sm font-medium text-blue-100 hover:bg-blue-500 hover:text-white transition duration-150 ease-in-out">Dashboard</NuxtLink>
+              <NuxtLink to="/projects" class="px-4 py-2 rounded-md text-sm font-medium text-blue-100 hover:bg-blue-500 hover:text-white transition duration-150 ease-in-out">Projects</NuxtLink>
+              <NuxtLink to="/deployments" class="px-4 py-2 rounded-md text-sm font-medium text-blue-100 hover:bg-blue-500 hover:text-white transition duration-150 ease-in-out">Deployments</NuxtLink>
             </div>
           </div>
         </div>
