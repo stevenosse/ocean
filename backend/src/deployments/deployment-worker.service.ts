@@ -30,9 +30,28 @@ export class DeploymentWorkerService {
         data: { status: DeploymentStatus.in_progress }
       });
 
+      // Retrieve the project with all fields, especially build commands
       const project = await this.prisma.project.findUnique({
         where: { id: deployment.projectId },
+        select: {
+          id: true,
+          name: true,
+          repositoryUrl: true,
+          branch: true,
+          rootFolder: true,
+          buildCommand: true,
+          startCommand: true,
+          installCommand: true,
+          outputDirectory: true,
+          active: true,
+          dockerComposeFile: true,
+          dockerServiceName: true
+        }
       });
+
+      // Log the project details for debugging
+      this.logger.debug(`Project details: ${JSON.stringify(project, null, 2)}`);
+      this.logger.debug(`Build commands - Install: ${project.installCommand}, Build: ${project.buildCommand}, Start: ${project.startCommand}`);
 
       if (!project) {
         throw new Error(`Project with ID ${deployment.projectId} not found`);
@@ -193,83 +212,93 @@ export class DeploymentWorkerService {
     const currentDeployment = await this.prisma.deployment.findUnique({ where: { id: deploymentId } });
     let logs = currentDeployment?.logs || '';
 
-    // Create a Dockerfile if it doesn't exist
+    // Always create a new Dockerfile for each deployment to ensure it reflects current configuration
     const dockerfilePath = path.join(workingDir, 'Dockerfile');
-    if (!fs.existsSync(dockerfilePath)) {
-      logs += '\nNo Dockerfile found, checking project type\n';
-      await this.updateDeploymentLogs(deploymentId, logs);
 
-      // Check if this is a Node.js project by looking for package.json
-      const rootFolder = project.rootFolder || '';
-      const repoDir = path.join(process.cwd(), '../repos', `project-${project.id}`);
-
-      // Check if package.json exists in the specified root folder
-      let packageJsonPath = path.join(repoDir, rootFolder, 'package.json');
-
-      if (fs.existsSync(packageJsonPath)) {
-        logs += `\nFound package.json in specified root folder: ${rootFolder}\n`;
-        await this.updateDeploymentLogs(deploymentId, logs);
-      } else {
-        logs += `\nNo package.json found in specified root folder: ${rootFolder}\n`;
-        logs += 'Please make sure your root folder is set correctly in the project settings.\n';
-        logs += 'The root folder should point to the directory containing package.json.\n';
-        await this.updateDeploymentLogs(deploymentId, logs);
-
-        // If the root folder is not specified or is the default, try to find package.json
-        if (!rootFolder || rootFolder === '/') {
-          logs += '\nAttempting to find package.json in the repository...\n';
-          await this.updateDeploymentLogs(deploymentId, logs);
-
-          // Find all package.json files in the repository
-          const { stdout } = await execAsync(`find ${repoDir} -name "package.json" -type f`);
-          const packageJsonFiles = stdout.trim().split('\n').filter(Boolean);
-
-          if (packageJsonFiles.length > 0) {
-            // Use the first package.json found
-            packageJsonPath = packageJsonFiles[0];
-            // Extract the relative directory from the repo root
-            const packageJsonDir = path.dirname(packageJsonPath).replace(repoDir, '').replace(/^\//, '');
-
-            logs += `\nFound package.json in subdirectory: ${packageJsonDir}\n`;
-            await this.updateDeploymentLogs(deploymentId, logs);
-
-            // Update the project's root folder
-            project.rootFolder = '/' + packageJsonDir;
-            logs += `\nUpdating project root folder to: ${project.rootFolder}\n`;
-            await this.updateDeploymentLogs(deploymentId, logs);
-
-            // Save the updated root folder to the database
-            await this.prisma.project.update({
-              where: { id: project.id },
-              data: { rootFolder: project.rootFolder }
-            });
-          } else {
-            logs += '\nNo package.json found in the repository.\n';
-            await this.updateDeploymentLogs(deploymentId, logs);
-          }
-        }
-      }
-
-      if (fs.existsSync(packageJsonPath)) {
-        logs += '\nFound package.json, creating Dockerfile for Node.js project\n';
-        await this.updateDeploymentLogs(deploymentId, logs);
-
-        // Create a basic Dockerfile for Node.js projects
-        const dockerfile = this.generateNodejsDockerfile(project);
-        fs.writeFileSync(dockerfilePath, dockerfile);
-
-        logs += `Created Dockerfile for Node.js project\n`;
-        await this.updateDeploymentLogs(deploymentId, logs);
-      } else {
-        logs += '\nNo package.json found. Cannot automatically create Dockerfile.\n';
-        logs += 'Please add a Dockerfile to your repository.\n';
-        await this.updateDeploymentLogs(deploymentId, logs);
-        throw new Error('No package.json found and no Dockerfile provided. Cannot deploy this project.');
-      }
-    } else {
-      logs += '\nUsing existing Dockerfile\n';
+    // Remove existing Dockerfile if it exists
+    if (fs.existsSync(dockerfilePath)) {
+      logs += '\nRemoving existing Dockerfile to create a fresh one with current configuration\n';
+      fs.unlinkSync(dockerfilePath);
       await this.updateDeploymentLogs(deploymentId, logs);
     }
+
+    logs += '\nChecking project type to generate appropriate Dockerfile\n';
+    await this.updateDeploymentLogs(deploymentId, logs);
+
+    // Check if this is a Node.js project by looking for package.json
+    const rootFolder = project.rootFolder || '';
+    const repoDir = path.join(process.cwd(), '../repos', `project-${project.id}`);
+
+    // Check if package.json exists in the specified root folder
+    let packageJsonPath = path.join(repoDir, rootFolder, 'package.json');
+
+    if (fs.existsSync(packageJsonPath)) {
+      logs += `\nFound package.json in specified root folder: ${rootFolder}\n`;
+      await this.updateDeploymentLogs(deploymentId, logs);
+    } else {
+      logs += `\nNo package.json found in specified root folder: ${rootFolder}\n`;
+      logs += 'Please make sure your root folder is set correctly in the project settings.\n';
+      logs += 'The root folder should point to the directory containing package.json.\n';
+      await this.updateDeploymentLogs(deploymentId, logs);
+
+      // If the root folder is not specified or is the default, try to find package.json
+      if (!rootFolder || rootFolder === '/') {
+        logs += '\nAttempting to find package.json in the repository...\n';
+        await this.updateDeploymentLogs(deploymentId, logs);
+
+        // Find all package.json files in the repository
+        const { stdout } = await execAsync(`find ${repoDir} -name "package.json" -type f`);
+        const packageJsonFiles = stdout.trim().split('\n').filter(Boolean);
+
+        if (packageJsonFiles.length > 0) {
+          // Use the first package.json found
+          packageJsonPath = packageJsonFiles[0];
+          // Extract the relative directory from the repo root
+          const packageJsonDir = path.dirname(packageJsonPath).replace(repoDir, '').replace(/^\//, '');
+
+          logs += `\nFound package.json in subdirectory: ${packageJsonDir}\n`;
+          await this.updateDeploymentLogs(deploymentId, logs);
+
+          // Update the project's root folder
+          project.rootFolder = '/' + packageJsonDir;
+          logs += `\nUpdating project root folder to: ${project.rootFolder}\n`;
+          await this.updateDeploymentLogs(deploymentId, logs);
+
+          // Save the updated root folder to the database
+          await this.prisma.project.update({
+            where: { id: project.id },
+            data: { rootFolder: project.rootFolder }
+          });
+        } else {
+          logs += '\nNo package.json found in the repository.\n';
+          await this.updateDeploymentLogs(deploymentId, logs);
+        }
+      }
+    }
+
+    if (fs.existsSync(packageJsonPath)) {
+      logs += '\nFound package.json, creating Dockerfile for Node.js project\n';
+
+      // Log the project commands that will be used in the Dockerfile
+      logs += `\nProject configuration:\n`;
+      logs += `- Install command: ${project.installCommand || 'npm install (default)'}\n`;
+      logs += `- Build command: ${project.buildCommand || 'None (default)'}\n`;
+      logs += `- Start command: ${project.startCommand || 'npm start (default)'}\n`;
+      await this.updateDeploymentLogs(deploymentId, logs);
+
+      // Create a basic Dockerfile for Node.js projects
+      const dockerfile = this.generateNodejsDockerfile(project);
+      fs.writeFileSync(dockerfilePath, dockerfile);
+
+      logs += `Created Dockerfile for Node.js project\n`;
+      await this.updateDeploymentLogs(deploymentId, logs);
+    } else {
+      logs += '\nNo package.json found. Cannot automatically create Dockerfile.\n';
+      logs += 'Please add a Dockerfile to your repository.\n';
+      await this.updateDeploymentLogs(deploymentId, logs);
+      throw new Error('No package.json found and no Dockerfile provided. Cannot deploy this project.');
+    }
+
 
     // Create .env file with project environment variables
     const envFilePath = path.join(workingDir, '.env');
@@ -398,7 +427,10 @@ export class DeploymentWorkerService {
     // Default Node.js version
     const nodeVersion = '18';
 
-    // Default commands if not specified
+    // Use project's specified commands or fallback to defaults
+    // Log the commands we're using to help with debugging
+    this.logger.debug(`Project commands - Install: ${project.installCommand}, Build: ${project.buildCommand}, Start: ${project.startCommand}`);
+
     const installCommand = project.installCommand || 'npm install';
     const buildCommand = project.buildCommand || '';
     const startCommand = project.startCommand || 'npm start';
@@ -477,67 +509,6 @@ CMD ${startCommand.startsWith('[') ? startCommand : `["sh", "-c", "${startComman
     return dockerfile;
   }
 
-  private async runCustomBuildSteps(
-    deploymentId: number,
-    project: any,
-    workingDir: string,
-    envVars: Record<string, string>
-  ): Promise<void> {
-    const currentDeployment = await this.prisma.deployment.findUnique({ where: { id: deploymentId } });
-    let logs = currentDeployment?.logs || '';
-
-    // Create .env file with project environment variables
-    const envFilePath = path.join(workingDir, '.env');
-    const envFileContent = Object.entries(envVars)
-      .map(([key, value]) => `${key}=${value}`)
-      .join('\n');
-
-    fs.writeFileSync(envFilePath, envFileContent);
-    logs += `\nCreated .env file with ${Object.keys(envVars).length} environment variables\n`;
-    await this.updateDeploymentLogs(deploymentId, logs);
-
-    // Run install command if specified
-    if (project.installCommand) {
-      logs += `\nRunning install command: ${project.installCommand}\n`;
-      await this.updateDeploymentLogs(deploymentId, logs);
-
-      const { stdout: installStdout, stderr: installStderr } = await this.runCommandWithEnv(
-        project.installCommand,
-        workingDir,
-        envVars
-      );
-
-      logs += installStdout + installStderr;
-      await this.updateDeploymentLogs(deploymentId, logs);
-    }
-
-    // Run build command if specified
-    if (project.buildCommand) {
-      logs += `\nRunning build command: ${project.buildCommand}\n`;
-      await this.updateDeploymentLogs(deploymentId, logs);
-
-      const { stdout: buildStdout, stderr: buildStderr } = await this.runCommandWithEnv(
-        project.buildCommand,
-        workingDir,
-        envVars
-      );
-
-      logs += buildStdout + buildStderr;
-      await this.updateDeploymentLogs(deploymentId, logs);
-    }
-
-    // Run start command if specified
-    if (project.startCommand) {
-      logs += `\nRunning start command: ${project.startCommand}\n`;
-      await this.updateDeploymentLogs(deploymentId, logs);
-
-      // For start commands, we run them in the background as a detached process
-      this.runDetachedCommand(project.startCommand, workingDir, envVars, deploymentId);
-
-      logs += `Start command is running in the background\n`;
-      await this.updateDeploymentLogs(deploymentId, logs);
-    }
-  }
 
   private async runCommandWithEnv(
     command: string,
