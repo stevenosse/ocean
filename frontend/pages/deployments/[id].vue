@@ -88,6 +88,17 @@
                 {{ deployment.completedAt ? new Date(deployment.completedAt).toLocaleString() : 'Not completed yet' }}
               </dd>
             </div>
+            <div v-if="deployment.status === 'completed' && deployment.project?.applicationUrl" class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+              <dt class="text-sm font-medium text-gray-500">Application URL</dt>
+              <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                <a :href="deployment.project.applicationUrl" target="_blank" class="text-blue-600 hover:text-blue-900">
+                  {{ deployment.project.applicationUrl }}
+                  <svg class="inline-block ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+              </dd>
+            </div>
           </dl>
         </div>
       </div>

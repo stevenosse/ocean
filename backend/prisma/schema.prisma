@@ -32,6 +32,7 @@ model Project {
   startCommand         String?           @map("start_command")
   installCommand       String?           @map("install_command")
   outputDirectory      String?           @map("output_directory")
+  applicationUrl       String?           @map("application_url")
   createdAt            DateTime          @default(now()) @map("created_at")
   updatedAt            DateTime          @default(now()) @updatedAt @map("updated_at")
   deployments          Deployment[]

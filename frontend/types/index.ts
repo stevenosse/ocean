@@ -19,6 +19,7 @@ export interface Project {
   startCommand?: string;
   installCommand?: string;
   outputDirectory?: string;
+  applicationUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
