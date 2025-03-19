@@ -391,6 +391,18 @@ CMD ${startCommand}`;
         const imageName = `ocean-project-${project.id}:latest`;
 
         try {
+            // Stop any existing ngrok tunnel for this project
+            const stopNgrokScriptPath = path.join(process.cwd(), '../scripts/stop-ngrok.sh');
+            logs += '\nStopping any existing ngrok tunnels for this project...\n';
+            try {
+                const { stdout: stopNgrokOutput } = await execAsync(`${stopNgrokScriptPath} ${project.id}`);
+                logs += stopNgrokOutput + '\n';
+            } catch (error) {
+                logs += `Warning: Failed to stop ngrok tunnel: ${error.message}\n`;
+                // Continue deployment even if ngrok stop fails
+            }
+            await updateLogs(logs);
+            
             // Clean up existing container
             await execAsync(`docker stop ${containerName} || true`);
             await execAsync(`docker rm ${containerName} || true`);
@@ -539,6 +551,40 @@ CMD ${startCommand}`;
                 containerPort: port,
                 monitoringEnabled: true
             });
+            
+            // Set up ngrok tunnel for the container
+            logs += '\nSetting up ngrok tunnel for the application...\n';
+            await updateLogs(logs);
+            
+            try {
+                const ngrokScriptPath = path.join(process.cwd(), '../scripts/setup-ngrok.sh');
+                const ngrokCommand = `${ngrokScriptPath} ${project.id} ${port}`;
+                
+                const { stdout: ngrokOutput } = await execAsync(ngrokCommand);
+                logs += ngrokOutput + '\n';
+                
+                // Extract the tunnel URL from ngrok output
+                const tunnelUrlMatch = ngrokOutput.match(/URL: (https:\/\/[^\s]+)/);
+                if (tunnelUrlMatch && tunnelUrlMatch[1]) {
+                    const tunnelUrl = tunnelUrlMatch[1];
+                    logs += `Application is accessible at: ${tunnelUrl}\n`;
+                    
+                    // Update the project's application URL in the database
+                    await this.prisma.project.update({
+                        where: { id: project.id },
+                        data: { applicationUrl: tunnelUrl }
+                    });
+                    
+                    logs += 'Successfully updated application URL in database\n';
+                } else {
+                    logs += 'Warning: No tunnel URL was obtained from ngrok\n';
+                }
+            } catch (error) {
+                logs += `Warning: Failed to set up ngrok tunnel: ${error.message}\n`;
+                // Continue deployment even if ngrok setup fails
+            }
+            
+            await updateLogs(logs);
 
             // Update .env file
             const envFileContent = Object.entries(containerEnv)

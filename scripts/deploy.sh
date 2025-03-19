@@ -47,6 +47,29 @@ COMMIT_HASH=$(cd "$REPO_DIR" && git rev-parse HEAD)
 COMMIT_MESSAGE=$(cd "$REPO_DIR" && git log -1 --pretty=%B)
 
 echo "Commit: $COMMIT_HASH" | tee -a "$LOG_FILE"
+
+# Get container port from docker-compose or default to 3000
+if [ -f "$REPO_DIR/$COMPOSE_FILE" ]; then
+  PORT=$(grep -o 'ports:.*".*:.*"' "$REPO_DIR/$COMPOSE_FILE" | grep -o '[0-9]\+:[0-9]\+' | cut -d':' -f2 || echo "3000")
+else
+  PORT="3000"
+fi
+
+# Set up ngrok tunnel
+echo "Setting up ngrok tunnel for port $PORT..." | tee -a "$LOG_FILE"
+NGROK_OUTPUT=$($BASE_DIR/scripts/setup-ngrok.sh "$PROJECT_ID" "$PORT" 2>&1)
+echo "$NGROK_OUTPUT" | tee -a "$LOG_FILE"
+
+# Extract and store the tunnel URL
+TUNNEL_URL=$(echo "$NGROK_OUTPUT" | grep "URL:" | cut -d' ' -f2)
+if [ ! -z "$TUNNEL_URL" ]; then
+    echo "Application URL: $TUNNEL_URL" | tee -a "$LOG_FILE"
+    echo "Updating application URL in database..." | tee -a "$LOG_FILE"
+    cd "$BASE_DIR" && npx prisma query "UPDATE Project SET application_url = '$TUNNEL_URL', updated_at = NOW() WHERE id = $PROJECT_ID" | tee -a "$LOG_FILE"
+    echo "Successfully updated application URL in database" | tee -a "$LOG_FILE"
+else
+    echo "Warning: No tunnel URL was obtained from ngrok" | tee -a "$LOG_FILE"
+fi
 echo "Message: $COMMIT_MESSAGE" | tee -a "$LOG_FILE"
 
 # Deploy using Docker Compose
