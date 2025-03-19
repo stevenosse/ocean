@@ -71,11 +71,11 @@
       <div class="border-b border-gray-200">
         <nav class="-mb-px flex space-x-8" aria-label="Tabs">
           <button v-for="tab in tabs" :key="tab.name" @click="currentTab = tab.name" :class="[
-          currentTab === tab.name
-            ? 'border-blue-500 text-blue-600'
-            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
-          'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm focus:outline-none'
-        ]">
+        currentTab === tab.name
+          ? 'border-blue-500 text-blue-600'
+          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
+        'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm focus:outline-none'
+      ]">
             {{ tab.name }}
           </button>
         </nav>
@@ -108,10 +108,10 @@
                 <dt class="text-sm font-medium text-gray-500">Status</dt>
                 <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
                   <span :class="{
-          'px-2 inline-flex text-xs leading-5 font-semibold rounded-full': true,
-          'bg-green-100 text-green-800': project.active,
-          'bg-red-100 text-red-800': !project.active
-        }">
+        'px-2 inline-flex text-xs leading-5 font-semibold rounded-full': true,
+        'bg-green-100 text-green-800': project.active,
+        'bg-red-100 text-red-800': !project.active
+      }">
                     {{ project.active ? 'Active' : 'Inactive' }}
                   </span>
                 </dd>
@@ -119,7 +119,20 @@
               <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt class="text-sm font-medium text-gray-500">Created At</dt>
                 <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ new
-          Date(project.createdAt).toLocaleString() }}</dd>
+        Date(project.createdAt).toLocaleString() }}</dd>
+              </div>
+              <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-gray-500">Application URL</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                  <a :href="project.applicationUrl" target="_blank" class="text-blue-600 hover:text-blue-900">
+                    {{ project.applicationUrl }}
+                    <svg class="inline-block ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none"
+                      viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                </dd>
               </div>
             </dl>
           </div>
@@ -231,11 +244,11 @@
                 <tr v-for="deployment in deployments" :key="deployment.id">
                   <td class="px-6 py-4 whitespace-nowrap text-sm">
                     <span :class="{
-          'px-2 inline-flex text-xs leading-5 font-semibold rounded-full': true,
-          'bg-green-100 text-green-800': deployment.status === 'completed',
-          'bg-yellow-100 text-yellow-800': deployment.status === 'pending' || deployment.status === 'in_progress',
-          'bg-red-100 text-red-800': deployment.status === 'failed'
-        }">
+        'px-2 inline-flex text-xs leading-5 font-semibold rounded-full': true,
+        'bg-green-100 text-green-800': deployment.status === 'completed',
+        'bg-yellow-100 text-yellow-800': deployment.status === 'pending' || deployment.status === 'in_progress',
+        'bg-red-100 text-red-800': deployment.status === 'failed'
+      }">
                       {{ deployment.status }}
                     </span>
                   </td>
