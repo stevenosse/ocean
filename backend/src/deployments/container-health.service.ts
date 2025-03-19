@@ -8,7 +8,7 @@ const execAsync = promisify(exec);
 @Injectable()
 export class ContainerHealthService {
   private readonly logger = new Logger(ContainerHealthService.name);
-  private readonly MAX_RETRIES = 3;
+  private readonly MAX_RETRIES = 5;
   private readonly RETRY_DELAY = 10000; // 10 seconds
   private readonly STARTUP_GRACE_PERIOD = 30000; // 30 seconds grace period for startup
 
