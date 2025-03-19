@@ -38,8 +38,13 @@
     <div v-else>
       <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
         <div class="px-4 py-5 sm:px-6">
-          <h3 class="text-lg leading-6 font-medium text-gray-900">Deployment Information</h3>
-          <p class="mt-1 max-w-2xl text-sm text-gray-500">Details about this deployment.</p>
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-lg leading-6 font-medium text-gray-900">Deployment Information</h3>
+              <p class="mt-1 max-w-2xl text-sm text-gray-500">Details about this deployment.</p>
+            </div>
+
+          </div>
         </div>
         <div class="border-t border-gray-200">
           <dl>
@@ -88,13 +93,16 @@
                 {{ deployment.completedAt ? new Date(deployment.completedAt).toLocaleString() : 'Not completed yet' }}
               </dd>
             </div>
-            <div v-if="deployment.status === 'completed' && deployment.project?.applicationUrl" class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+            <div v-if="deployment.status === 'completed' && deployment.project?.applicationUrl"
+              class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
               <dt class="text-sm font-medium text-gray-500">Application URL</dt>
               <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
                 <a :href="deployment.project.applicationUrl" target="_blank" class="text-blue-600 hover:text-blue-900">
                   {{ deployment.project.applicationUrl }}
-                  <svg class="inline-block ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  <svg class="inline-block ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none"
+                    viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
                 </a>
               </dd>
@@ -105,7 +113,24 @@
 
       <div class="bg-white shadow overflow-hidden sm:rounded-lg">
         <div class="px-4 py-5 sm:px-6">
-          <h3 class="text-lg leading-6 font-medium text-gray-900">Deployment Logs</h3>
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Deployment Logs</h3>
+            <button @click="refreshDeployment" :disabled="loading"
+              class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
+              <svg :class="[loading ? 'animate-spin' : '', '-ml-0.5 mr-2 h-4 w-4']" xmlns="http://www.w3.org/2000/svg"
+                fill="none" viewBox="0 0 24 24">
+                <circle v-if="loading" class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                  stroke-width="4" />
+                <path v-if="loading" class="opacity-75" fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                <path v-if="!loading" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Refresh
+            </button>
+          </div>
+
         </div>
         <div class="border-t border-gray-200 p-4">
           <div v-if="!deployment.logs" class="text-center py-8 text-gray-500">
@@ -129,6 +154,20 @@ const route = useRoute()
 const api = useApi()
 const deployment = ref<Deployment | null>(null)
 const loading = ref(true)
+
+const refreshDeployment = async () => {
+  loading.value = true
+  try {
+    const id = Number(route.params.id)
+    if (!isNaN(id)) {
+      deployment.value = await api.fetchDeployment(id)
+    }
+  } catch (error) {
+    console.error('Error fetching deployment:', error)
+  } finally {
+    loading.value = false
+  }
+}
 
 onMounted(async () => {
   try {
