@@ -141,6 +141,15 @@ export const useApi = () => {
       return false
     }
   }
+  
+  const fetchProjectLogs = async (projectId: number): Promise<string> => {
+    try {
+      return await $fetch<string>(`${baseURL}/projects/${projectId}/logs`)
+    } catch (error) {
+      console.error(`Error fetching logs for project ${projectId}:`, error)
+      return ''
+    }
+  }
 
   return {
     fetchProjects,
@@ -150,6 +159,7 @@ export const useApi = () => {
     fetchDeployments,
     fetchDeployment,
     fetchProjectDeployments,
+    fetchProjectLogs,
     triggerDeploy,
     fetchEnvironments,
     fetchEnvironment,

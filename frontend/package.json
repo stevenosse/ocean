@@ -9,18 +9,19 @@
     "generate": "nuxi generate"
   },
   "dependencies": {
-    "nuxt": "^3.7.4",
     "@sidebase/nuxt-auth": "^0.6.0-beta.5",
-    "vue": "^3.3.4",
+    "@vue/compiler-sfc": "^3.3.4",
     "@vue/server-renderer": "^3.3.4",
-    "@vue/compiler-sfc": "^3.3.4"
+    "ansi-to-html": "^0.7.2",
+    "nuxt": "^3.7.4",
+    "vue": "^3.3.4"
   },
   "devDependencies": {
-    "@nuxtjs/tailwindcss": "^6.8.0",
-    "postcss": "^8.4.31",
-    "autoprefixer": "^10.4.16",
-    "typescript": "^5.0.0",
     "@nuxt/typescript-build": "^3.0.0",
-    "@types/node": "^18.0.0"
+    "@nuxtjs/tailwindcss": "^6.8.0",
+    "@types/node": "^18.0.0",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.31",
+    "typescript": "^5.0.0"
   }
 }

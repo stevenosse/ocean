@@ -100,7 +100,7 @@
           <tbody class="bg-white divide-y divide-gray-200">
             <tr v-for="deployment in recentDeployments" :key="deployment.id">
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                {{ deployment.project.name }}
+                {{ deployment.project?.name || 'Not linked project' }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm">
                 <span :class="{

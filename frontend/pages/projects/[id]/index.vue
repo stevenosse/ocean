@@ -179,6 +179,11 @@
           </div>
         </div>
 
+        <!-- Logs Tab -->
+        <div v-if="currentTab === 'Logs'">
+          <ContainerLogs :project-id="Number($route.params.id)" />
+        </div>
+
         <!-- Deployments Tab -->
         <div v-if="currentTab === 'Deployments'">
           <div class="flex justify-between items-center mb-4">
@@ -276,7 +281,8 @@ const loadingDeployments = ref(true)
 const tabs = [
   { name: 'Overview' },
   { name: 'Configuration' },
-  { name: 'Deployments' }
+  { name: 'Deployments' },
+  { name: 'Logs' }
 ]
 const currentTab = ref('Overview')
 
@@ -286,11 +292,13 @@ onMounted(async () => {
     if (!isNaN(id)) {
       const [projectData, deploymentsData] = await Promise.all([
         api.fetchProject(id),
-        api.fetchProjectDeployments(id)
+        api.fetchProjectDeployments(id),
       ])
 
       project.value = projectData
       deployments.value = deploymentsData
+    } else {
+      console.error('Invalid project ID')
     }
   } catch (error) {
     console.error('Error fetching project data:', error)

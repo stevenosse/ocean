@@ -3,6 +3,10 @@ import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { Project } from '@prisma/client';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 
 @Injectable()
 export class ProjectsService {
@@ -41,5 +45,21 @@ export class ProjectsService {
     await this.prisma.project.delete({
       where: { id },
     });
+  }
+
+  async getLogs(id: number): Promise<string[]> {
+    const project = await this.findOne(id);
+    if (!project) {
+      throw new Error('Project not found');
+    }
+
+    try {
+      const serviceName = `ocean-project-${project.id}`
+      const { stdout } = await execAsync(`docker logs --tail 1000 ${serviceName}`);
+      return stdout.split('\n').filter(line => line.length > 0);
+    } catch (error) {
+      console.error('Error fetching container logs:', error);
+      throw new Error('Failed to fetch container logs');
+    }
   }
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpStatus, HttpException, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpStatus, HttpException, BadRequestException, Res, Header } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
@@ -11,7 +11,7 @@ export class ProjectsController {
   constructor(
     private readonly projectsService: ProjectsService,
     private readonly deploymentsService: DeploymentsService
-  ) {}
+  ) { }
 
   @Post()
   async create(@Body() createProjectDto: CreateProjectDto) {
@@ -65,7 +65,7 @@ export class ProjectsController {
     try {
       // Verify project exists
       const project = await this.projectsService.findOne(+id);
-      
+
       // Create a deployment for this project
       return await this.deploymentsService.create({
         projectId: project.id,
@@ -77,6 +77,16 @@ export class ProjectsController {
         error.message || 'Failed to trigger deployment',
         HttpStatus.BAD_REQUEST,
       );
+    }
+  }
+
+  @Get(':id/logs')
+  @Header('Cache-Control', 'no-store, no-cache, must-revalidate, private')
+  async getLogs(@Param('id') id: string) {
+    try {
+      return await this.projectsService.getLogs(+id);
+    } catch (error) {
+      throw new BadRequestException(error.message || 'Failed to fetch container logs');
     }
   }
 }
