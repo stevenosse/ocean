@@ -1,4 +1,5 @@
-import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
+import { DeploymentLogsService } from './deployment-logs.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { GithubService } from '../github/github.service';
 import { EnvironmentsService } from '../environments/environments.service';
@@ -13,13 +14,14 @@ const execAsync = promisify(exec);
 
 @Injectable()
 export class DeploymentWorkerService {
-  private readonly logger = new Logger(DeploymentWorkerService.name);
+  // Using the dedicated logging service instead of local logger
 
   constructor(
     private prisma: PrismaService,
     private githubService: GithubService,
     @Inject(forwardRef(() => EnvironmentsService))
     private environmentsService: EnvironmentsService,
+    private logsService: DeploymentLogsService,
   ) { }
 
   async startDeployment(deployment: Deployment): Promise<void> {
@@ -50,8 +52,8 @@ export class DeploymentWorkerService {
       });
 
       // Log the project details for debugging
-      this.logger.debug(`Project details: ${JSON.stringify(project, null, 2)}`);
-      this.logger.debug(`Build commands - Install: ${project.installCommand}, Build: ${project.buildCommand}, Start: ${project.startCommand}`);
+      this.logsService.debug(`Project details: ${JSON.stringify(project, null, 2)}`, 'Deployment');
+      this.logsService.debug(`Build commands - Install: ${project.installCommand}, Build: ${project.buildCommand}, Start: ${project.startCommand}`, 'Deployment');
 
       if (!project) {
         throw new Error(`Project with ID ${deployment.projectId} not found`);
@@ -180,9 +182,9 @@ export class DeploymentWorkerService {
         }
       });
       
-      this.logger.log(`Deployment ${deployment.id} completed successfully. Port: ${completedDeployment?.containerPort || 'unknown'}`);
+      this.logsService.logDeployment(`Deployment ${deployment.id} completed successfully. Port: ${completedDeployment?.containerPort || 'unknown'}`);
     } catch (error) {
-      this.logger.error(`Deployment failed: ${error.message}`, error.stack);
+      this.logsService.error(`Deployment failed: ${error.message}`, error, 'Deployment');
 
       // Update status to failed
       const currentDeployment = await this.prisma.deployment.findUnique({ where: { id: deployment.id } });
@@ -201,10 +203,8 @@ export class DeploymentWorkerService {
   }
 
   private async updateDeploymentLogs(deploymentId: number, logs: string): Promise<void> {
-    await this.prisma.deployment.update({
-      where: { id: deploymentId },
-      data: { logs }
-    });
+    // Use the dedicated logs service to update deployment logs
+    await this.logsService.updateDeploymentLogs(deploymentId, logs);
   }
 
   private async runCustomDeploymentSteps(
@@ -341,12 +341,48 @@ export class DeploymentWorkerService {
 
     // Create .env file with project environment variables
     const envFilePath = path.join(workingDir, '.env');
+    
+    // Process environment variables to replace localhost with host.docker.internal in database connection strings
+    let dbConnectionsUpdated = false;
+    
+    Object.keys(envVars).forEach(key => {
+      const value = envVars[key];
+      
+      // Check if this is a database connection string (common patterns)
+      if (
+        (key === 'DATABASE_URL' || key.includes('DB_') || key.includes('DATABASE')) &&
+        typeof value === 'string' && 
+        (value.includes('localhost') || value.includes('127.0.0.1'))
+      ) {
+        const originalValue = value;
+        // Replace both localhost and 127.0.0.1 with host.docker.internal
+        const updatedValue = value
+          .replace(/localhost/g, 'host.docker.internal')
+          .replace(/127\.0\.0\.1/g, 'host.docker.internal');
+        
+        envVars[key] = updatedValue;
+        
+        logs += `\nDetected database connection in ${key}. Modified to use host.docker.internal.\n`;
+        logs += `Original: ${originalValue}\n`;
+        logs += `Modified: ${updatedValue}\n`;
+        
+        dbConnectionsUpdated = true;
+      }
+    });
+    
+    // Create the .env file content with the updated variables
     const envFileContent = Object.entries(envVars)
       .map(([key, value]) => `${key}=${value}`)
       .join('\n');
 
     fs.writeFileSync(envFilePath, envFileContent);
-    logs += `\nCreated .env file with ${Object.keys(envVars).length} environment variables\n`;
+    
+    if (dbConnectionsUpdated) {
+      logs += `\nCreated .env file with ${Object.keys(envVars).length} environment variables (database connections updated to use host.docker.internal)\n`;
+    } else {
+      logs += `\nCreated .env file with ${Object.keys(envVars).length} environment variables\n`;
+    }
+    
     await this.updateDeploymentLogs(deploymentId, logs);
 
     // Build the Docker image
@@ -429,9 +465,55 @@ export class DeploymentWorkerService {
         data: { containerPort: port }
       });
 
+      // Process all environment variables to replace localhost with host.docker.internal for database connections
+      let dbConnectionUpdated = false;
+      
+      // Process all environment variables
+      Object.keys(envVars).forEach(key => {
+        const value = envVars[key];
+        
+        // Check if this is a database connection string (common patterns)
+        if (
+          (key === 'DATABASE_URL' || key.includes('DB_') || key.includes('DATABASE')) &&
+          typeof value === 'string' && 
+          (value.includes('localhost') || value.includes('127.0.0.1'))
+        ) {
+          const originalValue = value;
+          // Replace both localhost and 127.0.0.1 with host.docker.internal
+          const updatedValue = value
+            .replace(/localhost/g, 'host.docker.internal')
+            .replace(/127\.0\.0\.1/g, 'host.docker.internal');
+          
+          envVars[key] = updatedValue;
+          
+          logs += `\nDetected database connection in ${key}. Modified to use host.docker.internal.\n`;
+          logs += `Original: ${originalValue}\n`;
+          logs += `Modified: ${updatedValue}\n`;
+          
+          dbConnectionUpdated = true;
+        }
+      });
+      
+      // If any database connections were updated, update the environment file
+      if (dbConnectionUpdated) {
+        // Rebuild the environment variables arguments for docker run
+        const updatedEnvArgs = Object.entries(envVars)
+          .map(([key, value]) => `-e ${key}=${value}`)
+          .join(' ');
+        
+        // Update the .env file with the modified values
+        const updatedEnvFileContent = Object.entries(envVars)
+          .map(([key, value]) => `${key}=${value}`)
+          .join('\n');
+        
+        fs.writeFileSync(envFilePath, updatedEnvFileContent);
+        logs += `Updated .env file with modified database connection strings.\n`;
+        await this.updateDeploymentLogs(deploymentId, logs);
+      }
+      
       // Run the container with resource limits and restart policy for isolation and recovery
-      // Using --network=host to ensure the application is accessible from outside the container
-      // Note: When using --network=host, the -p flag is not needed but we keep it for clarity
+      // Using --add-host to map host.docker.internal to the host machine's IP
+      // This ensures the container can connect to services running on the host
       const { stdout: runStdout, stderr: runStderr } = await execAsync(
         `docker run -d --name ${containerName} \
         --restart unless-stopped \
@@ -441,7 +523,8 @@ export class DeploymentWorkerService {
         --pids-limit=100 \
         --security-opt=no-new-privileges \
         --cap-drop=ALL \
-        --network=host \
+        --add-host=host.docker.internal:host-gateway \
+        -p ${port}:${port} \
         --health-cmd="wget --no-verbose --tries=3 --timeout=5 --spider http://localhost:${port} || curl -s --head http://localhost:${port} || exit 1" \
         --health-interval=30s \
         --health-timeout=10s \
@@ -455,9 +538,29 @@ export class DeploymentWorkerService {
       logs += runStdout + runStderr;
       logs += `\nContainer ${containerName} is now running on port ${port} with resource limits and health monitoring\n`;
       logs += `\nYour application is accessible at: http://localhost:${port}/\n`;
-      logs += `\nIMPORTANT: Make sure your application listens on 0.0.0.0 (all interfaces) and not just localhost.\n`;
-      logs += `\nFor Express.js apps, use: app.listen(process.env.PORT, '0.0.0.0', () => {...})\n`;
-      logs += `\nFor Next.js apps, add to next.config.js: { server: { host: '0.0.0.0' } }\n`;
+      
+      // Add detailed information about connecting to PostgreSQL and accessing the app
+      logs += `\n=== IMPORTANT DEPLOYMENT INFORMATION ===\n`;
+      logs += `\n1. ACCESSING YOUR APPLICATION:\n`;
+      logs += `   - Your application is exposed on port ${port}`;
+      logs += `\n   - Access it at: http://localhost:${port}/\n`;
+      
+      logs += `\n2. DATABASE CONNECTIONS FROM CONTAINER:\n`;
+      logs += `   - For PostgreSQL running on your host machine, use 'host.docker.internal' instead of 'localhost'`;
+      logs += `\n   - Example: postgresql://username:password@host.docker.internal:5432/database`;
+      logs += `\n   - We've automatically updated any DATABASE_URL environment variables to use host.docker.internal\n`;
+      
+      logs += `\n3. LISTENING CONFIGURATION:\n`;
+      logs += `   - Make sure your application listens on 0.0.0.0 (all interfaces) and not just localhost`;
+      logs += `\n   - For Express.js apps: app.listen(process.env.PORT, '0.0.0.0', () => {...})`;
+      logs += `\n   - For Next.js apps: add to next.config.js: { server: { host: '0.0.0.0' } }\n`;
+      
+      logs += `\n4. TROUBLESHOOTING CONNECTION ISSUES:\n`;
+      logs += `   - If database connections fail, check your PostgreSQL configuration to allow remote connections`;
+      logs += `\n   - For Linux hosts, you may need to update pg_hba.conf and postgresql.conf`;
+      logs += `\n   - Verify that your database is running and accessible from your host machine\n`;
+      
+      logs += `\n=== END DEPLOYMENT INFORMATION ===\n`;
       
       // Verify that the container is running correctly
       logs += `\nVerifying container status...\n`;
@@ -547,14 +650,32 @@ export class DeploymentWorkerService {
     } catch (error) {
       logs += `\nError deploying Docker container: ${error.message}\n`;
       logs += `\nOcean has isolated this error and will continue running normally.\n`;
-      logs += `\nTroubleshooting tips:\n`;
-      logs += `1. Check your application code for errors\n`;
-      logs += `2. Verify that your application listens on the correct port (default: 3000)\n`;
-      logs += `3. Make sure your Dockerfile is correctly configured\n`;
-      logs += `4. Check that your start command is correct\n`;
-      logs += `5. Ensure your application listens on 0.0.0.0 (all interfaces) and not just localhost\n`;
-      logs += `   - For Express.js: app.listen(process.env.PORT, '0.0.0.0', () => {})\n`;
-      logs += `   - For Next.js: In next.config.js add { server: { host: '0.0.0.0' } }\n`;
+      logs += `\n=== TROUBLESHOOTING TIPS ===\n`;
+      logs += `\n1. APPLICATION CONFIGURATION:\n`;
+      logs += `   - Check your application code for errors`;
+      logs += `\n   - Verify that your application listens on the correct port (default: 3000)`;
+      logs += `\n   - Ensure your application listens on 0.0.0.0 (all interfaces) and not just localhost`;
+      logs += `\n   - For Express.js: app.listen(process.env.PORT, '0.0.0.0', () => {})`;
+      logs += `\n   - For Next.js: In next.config.js add { server: { host: '0.0.0.0' } }\n`;
+      
+      logs += `\n2. DATABASE CONNECTION ISSUES:\n`;
+      logs += `   - If using a database on your host machine, ensure connection strings use 'host.docker.internal'`;
+      logs += `\n   - Example: postgresql://username:password@host.docker.internal:5432/database`;
+      logs += `\n   - Check that your database server is running and accessible from your host`;
+      logs += `\n   - Verify PostgreSQL is configured to accept connections (pg_hba.conf)\n`;
+      
+      logs += `\n3. DOCKER CONFIGURATION:\n`;
+      logs += `   - Make sure your Dockerfile is correctly configured`;
+      logs += `\n   - Check that your start command is correct`;
+      logs += `\n   - Verify that all required environment variables are set`;
+      logs += `\n   - Check Docker logs: docker logs ${containerName}\n`;
+      
+      logs += `\n4. NETWORKING ISSUES:\n`;
+      logs += `   - If your app needs to connect to other services, ensure proper network configuration`;
+      logs += `\n   - For services on your host machine, use 'host.docker.internal' as the hostname`;
+      logs += `\n   - For Linux hosts, you may need to add the host IP to your /etc/hosts file\n`;
+      
+      logs += `\n=== END TROUBLESHOOTING TIPS ===\n`;
 
       await this.updateDeploymentLogs(deploymentId, logs);
 
@@ -580,7 +701,7 @@ export class DeploymentWorkerService {
 
     // Use project's specified commands or fallback to defaults
     // Log the commands we're using to help with debugging
-    this.logger.debug(`Project commands - Install: ${project.installCommand}, Build: ${project.buildCommand}, Start: ${project.startCommand}`);
+    this.logsService.debug(`Project commands - Install: ${project.installCommand}, Build: ${project.buildCommand}, Start: ${project.startCommand}`, 'Docker Container');
 
     const installCommand = project.installCommand || 'npm install';
     const buildCommand = project.buildCommand || '';
@@ -629,14 +750,56 @@ EXPOSE \${PORT:-3000}
 `;
 
     // Add environment variables with HOST set to 0.0.0.0 to ensure the app listens on all interfaces
+    // Also add a special script to handle database connection strings during build time
     dockerfile += `# Set environment variables
 ENV NODE_ENV=production
 ENV PORT=\${PORT:-3000}
 ENV HOST=0.0.0.0
 
+# Add script to handle database connection strings
+RUN echo '#!/bin/sh' > /tmp/fix-db-connections.sh && \
+    echo 'echo "[DB Connection] Fixing database connection strings in all files..."' >> /tmp/fix-db-connections.sh && \
+    echo '' >> /tmp/fix-db-connections.sh && \
+    echo '# Fix .env files (handles any port number)' >> /tmp/fix-db-connections.sh && \
+    echo 'for file in $(find /app -type f -name ".env*"); do' >> /tmp/fix-db-connections.sh && \
+    echo '  echo "[DB Connection] Checking $file for database connections"' >> /tmp/fix-db-connections.sh && \
+    echo '  # PostgreSQL format' >> /tmp/fix-db-connections.sh && \
+    echo '  sed -i -E "s/(postgresql|postgres):\/\/([^:]+:[^@]+@)localhost([:]?[0-9]*)/\\1:\/\/\\2host.docker.internal\\3/g" $file' >> /tmp/fix-db-connections.sh && \
+    echo '  sed -i -E "s/(postgresql|postgres):\/\/([^:]+:[^@]+@)127\.0\.0\.1([:]?[0-9]*)/\\1:\/\/\\2host.docker.internal\\3/g" $file' >> /tmp/fix-db-connections.sh && \
+    echo '  # MySQL format' >> /tmp/fix-db-connections.sh && \
+    echo '  sed -i -E "s/(mysql):\/\/([^:]+:[^@]+@)localhost([:]?[0-9]*)/\\1:\/\/\\2host.docker.internal\\3/g" $file' >> /tmp/fix-db-connections.sh && \
+    echo '  sed -i -E "s/(mysql):\/\/([^:]+:[^@]+@)127\.0\.0\.1([:]?[0-9]*)/\\1:\/\/\\2host.docker.internal\\3/g" $file' >> /tmp/fix-db-connections.sh && \
+    echo '  # MongoDB format' >> /tmp/fix-db-connections.sh && \
+    echo '  sed -i -E "s/(mongodb|mongodb\+srv):\/\/([^:]+:[^@]+@)localhost([:]?[0-9]*)/\\1:\/\/\\2host.docker.internal\\3/g" $file' >> /tmp/fix-db-connections.sh && \
+    echo '  sed -i -E "s/(mongodb|mongodb\+srv):\/\/([^:]+:[^@]+@)127\.0\.0\.1([:]?[0-9]*)/\\1:\/\/\\2host.docker.internal\\3/g" $file' >> /tmp/fix-db-connections.sh && \
+    echo '  # Simple localhost replacement (for all formats)' >> /tmp/fix-db-connections.sh && \
+    echo '  sed -i "s/localhost/host.docker.internal/g" $file' >> /tmp/fix-db-connections.sh && \
+    echo '  sed -i "s/127\.0\.0\.1/host.docker.internal/g" $file' >> /tmp/fix-db-connections.sh && \
+    echo 'done' >> /tmp/fix-db-connections.sh && \
+    echo '' >> /tmp/fix-db-connections.sh && \
+    echo '# Fix code files with hardcoded connection strings' >> /tmp/fix-db-connections.sh && \
+    echo 'for file in $(find /app -type f -name "*.js" -o -name "*.ts" -o -name "*.json" -o -name "*.cjs" -o -name "*.mjs"); do' >> /tmp/fix-db-connections.sh && \
+    echo '  if grep -q "localhost\|127\.0\.0\.1" $file; then' >> /tmp/fix-db-connections.sh && \
+    echo '    echo "[DB Connection] Fixing database connections in $file"' >> /tmp/fix-db-connections.sh && \
+    echo '    # Fix various connection string formats' >> /tmp/fix-db-connections.sh && \
+    echo '    sed -i -E "s/(postgresql|postgres|mysql|mongodb|mongodb\+srv):\/\/([^:]+:[^@]+@)localhost([:]?[0-9]*)/\\1:\/\/\\2host.docker.internal\\3/g" $file' >> /tmp/fix-db-connections.sh && \
+    echo '    sed -i -E "s/(postgresql|postgres|mysql|mongodb|mongodb\+srv):\/\/([^:]+:[^@]+@)127\.0\.0\.1([:]?[0-9]*)/\\1:\/\/\\2host.docker.internal\\3/g" $file' >> /tmp/fix-db-connections.sh && \
+    echo '    # Fix connection objects and replace all localhost occurrences' >> /tmp/fix-db-connections.sh && \
+    echo '    sed -i "s/host[\"\']?\s*:\s*[\"\']localhost[\"\']?/host: \"host.docker.internal\"/g" $file' >> /tmp/fix-db-connections.sh && \
+    echo '    sed -i "s/host[\"\']?\s*:\s*[\"\']127\.0\.0\.1[\"\']?/host: \"host.docker.internal\"/g" $file' >> /tmp/fix-db-connections.sh && \
+    echo '    # Replace all other localhost occurrences' >> /tmp/fix-db-connections.sh && \    echo '    sed -i "s/localhost/host.docker.internal/g" $file' >> /tmp/fix-db-connections.sh && \    echo '    sed -i "s/127\.0\.0\.1/host.docker.internal/g" $file' >> /tmp/fix-db-connections.sh && \    echo '  fi' >> /tmp/fix-db-connections.sh && \
+    echo 'done' >> /tmp/fix-db-connections.sh && \
+    echo '' >> /tmp/fix-db-connections.sh && \
+    echo 'echo "[DB Connection] Database connection strings fixed successfully"' >> /tmp/fix-db-connections.sh && \
+    chmod +x /tmp/fix-db-connections.sh
+
+# Run the database connection fix script
+RUN /tmp/fix-db-connections.sh && rm /tmp/fix-db-connections.sh
+
 # Create a script to ensure the app listens on all interfaces
 RUN echo '#!/bin/sh' > /tmp/fix-host-binding.sh && \
     echo '' >> /tmp/fix-host-binding.sh && \
+    echo 'echo "[Host Binding] Configuring application to listen on all interfaces..."' >> /tmp/fix-host-binding.sh && \
     echo '# Modify Express.js apps to listen on all interfaces' >> /tmp/fix-host-binding.sh && \
     echo 'find . -type f -name "*.js" -exec sed -i "s/listen(\\s*\\(process\\.env\\.PORT\\|[0-9]\\+\\))/listen(\\1, \"0.0.0.0\")/g" {} \\;' >> /tmp/fix-host-binding.sh && \
     echo '' >> /tmp/fix-host-binding.sh && \
@@ -644,6 +807,7 @@ RUN echo '#!/bin/sh' > /tmp/fix-host-binding.sh && \
     echo 'if [ -f next.config.js ]; then' >> /tmp/fix-host-binding.sh && \
     echo '  if grep -q "server" next.config.js; then' >> /tmp/fix-host-binding.sh && \
     echo '    sed -i "s/server:\\s*{/server: { host: \"0.0.0.0\",/g" next.config.js' >> /tmp/fix-host-binding.sh && \
+    echo '    echo "[Host Binding] Configuring Next.js to listen on all interfaces"' >> /tmp/fix-host-binding.sh && \
     echo '  else' >> /tmp/fix-host-binding.sh && \
     echo '    sed -i "s/module.exports\\s*=\\s*{/module.exports = { server: { host: \"0.0.0.0\" },/g" next.config.js' >> /tmp/fix-host-binding.sh && \
     echo '  fi' >> /tmp/fix-host-binding.sh && \
@@ -653,6 +817,7 @@ RUN echo '#!/bin/sh' > /tmp/fix-host-binding.sh && \
     echo 'if [ ! -f next.config.js ] && grep -q "\"next\"" package.json; then' >> /tmp/fix-host-binding.sh && \
     echo '  echo "module.exports = { server: { host: \"0.0.0.0\" } };" > next.config.js' >> /tmp/fix-host-binding.sh && \
     echo 'fi' >> /tmp/fix-host-binding.sh && \
+    echo 'echo "[Host Binding] Configuration completed successfully"' >> /tmp/fix-host-binding.sh && \
     chmod +x /tmp/fix-host-binding.sh && \
     /tmp/fix-host-binding.sh && \
     rm /tmp/fix-host-binding.sh
@@ -675,7 +840,7 @@ CMD ${startCommand.startsWith('[') ? startCommand : `["sh", "-c", "${startComman
    * @returns An available port number
    */
   private async findAvailablePort(startPort: number, endPort: number): Promise<number> {
-    this.logger.debug(`Finding available port between ${startPort} and ${endPort}`);
+    this.logsService.debug(`Finding available port between ${startPort} and ${endPort}`, 'Port Allocation');
     
     // First check if any existing deployments are using ports in our range
     const existingDeployments = await this.prisma.deployment.findMany({
@@ -693,13 +858,13 @@ CMD ${startCommand.startsWith('[') ? startCommand : `["sh", "-c", "${startComman
     
     // Create a set of ports that are already in use
     const usedPorts = new Set(existingDeployments.map(d => d.containerPort));
-    this.logger.debug(`Ports already in use by deployments: ${Array.from(usedPorts).join(', ')}`);
+    this.logsService.debug(`Ports already in use by deployments: ${Array.from(usedPorts).join(', ')}`, 'Port Allocation');
     
     // Try each port in the range
     for (let port = startPort; port <= endPort; port++) {
       // Skip ports that are already used by deployments
       if (usedPorts.has(port)) {
-        this.logger.debug(`Skipping port ${port} as it's used by an existing deployment`);
+        this.logsService.debug(`Skipping port ${port} as it's used by an existing deployment`, 'Port Allocation');
         continue;
       }
       
@@ -708,39 +873,39 @@ CMD ${startCommand.startsWith('[') ? startCommand : `["sh", "-c", "${startComman
         const { stdout } = await execAsync(`lsof -i:${port} || echo 'PORT_FREE'`);
         
         if (stdout.includes('PORT_FREE')) {
-          this.logger.debug(`Found available port: ${port}`);
+          this.logsService.logPortAllocation(`Found available port: ${port}`);
           return port;
         } else {
-          this.logger.debug(`Port ${port} is in use according to lsof`);
+          this.logsService.debug(`Port ${port} is in use according to lsof`, 'Port Allocation');
         }
       } catch (error) {
         // If command fails, the port is likely available
-        this.logger.debug(`Port ${port} appears to be available (lsof command failed)`);
+        this.logsService.debug(`Port ${port} appears to be available (lsof command failed)`, 'Port Allocation');
         return port;
       }
     }
     
     // If no ports are available in the range, try to find a port outside the range
     const extendedEndPort = endPort + 1000; // Try 1000 more ports
-    this.logger.warn(`No available ports found between ${startPort} and ${endPort}, trying extended range up to ${extendedEndPort}`);
+    this.logsService.warn(`No available ports found between ${startPort} and ${endPort}, trying extended range up to ${extendedEndPort}`, 'Port Allocation');
     
     for (let port = endPort + 1; port <= extendedEndPort; port++) {
       try {
         const { stdout } = await execAsync(`lsof -i:${port} || echo 'PORT_FREE'`);
         
         if (stdout.includes('PORT_FREE')) {
-          this.logger.debug(`Found available port in extended range: ${port}`);
+          this.logsService.logPortAllocation(`Found available port in extended range: ${port}`);
           return port;
         }
       } catch (error) {
-        this.logger.debug(`Port ${port} in extended range appears to be available`);
+        this.logsService.debug(`Port ${port} in extended range appears to be available`, 'Port Allocation');
         return port;
       }
     }
     
     // If still no ports are available, generate a random port as last resort
     const randomPort = Math.floor(Math.random() * 10000) + 10000; // Random port between 10000-20000
-    this.logger.warn(`No available ports found in extended range, using random port: ${randomPort}`);
+    this.logsService.warn(`No available ports found in extended range, using random port: ${randomPort}`, 'Port Allocation');
     return randomPort;
   }
 
@@ -830,6 +995,6 @@ CMD ${startCommand.startsWith('[') ? startCommand : `["sh", "-c", "${startComman
     // Unref the child process so it can run independently
     childProcess.unref();
 
-    this.logger.log(`Started detached process for deployment ${deploymentId}, logs at: ${logFile}`);
+    this.logsService.logDeployment(`Started detached process for deployment ${deploymentId}, logs at: ${logFile}`);
   }
 }
