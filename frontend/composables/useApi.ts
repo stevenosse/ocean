@@ -121,7 +121,7 @@ export const useApi = () => {
   const updateEnvironment = async (id: number, environment: Partial<Environment>): Promise<Environment | null> => {
     try {
       return await $fetch<Environment>(`${baseURL}/environments/${id}`, {
-        method: 'PUT',
+        method: 'PATCH',
         body: environment
       })
     } catch (error) {
