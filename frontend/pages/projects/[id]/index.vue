@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="flex items-center justify-between mb-6">
-      <h1 class="text-3xl font-bold text-gray-900">Project Details</h1>
+      <h1 class="text-3xl font-bold text-gray-900">{{ project?.name }}</h1>
       <div class="flex space-x-3">
         <NuxtLink :to="`/projects/${$route.params.id}/environments`"
           class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
