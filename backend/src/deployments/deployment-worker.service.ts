@@ -134,14 +134,36 @@ export class DeploymentWorkerService {
       // Run custom deployment steps based on project configuration
       await this.runCustomDeploymentSteps(deployment.id, project, workingDir, envVars);
 
-      // Update status to completed
+      // Get the deployment details to include in the completion status
+      const completedDeployment = await this.prisma.deployment.findUnique({
+        where: { id: deployment.id },
+        select: { containerPort: true }
+      });
+      
+      // Update status to completed with port information in the logs
+      const successMessage = completedDeployment?.containerPort
+        ? `Deployment completed successfully. Application is running on port ${completedDeployment.containerPort}.`
+        : 'Deployment completed successfully.';
+        
+      // Get current logs
+      const currentDeployment = await this.prisma.deployment.findUnique({
+        where: { id: deployment.id },
+        select: { logs: true }
+      });
+      
+      const updatedLogs = `${currentDeployment?.logs || ''}\n\n${successMessage}`;
+      
+      // Update the deployment
       await this.prisma.deployment.update({
         where: { id: deployment.id },
         data: {
           status: DeploymentStatus.completed,
-          completedAt: new Date()
+          completedAt: new Date(),
+          logs: updatedLogs
         }
       });
+      
+      this.logger.log(`Deployment ${deployment.id} completed successfully. Port: ${completedDeployment?.containerPort || 'unknown'}`);
     } catch (error) {
       this.logger.error(`Deployment failed: ${error.message}`, error.stack);
 
@@ -319,10 +341,22 @@ export class DeploymentWorkerService {
 
     try {
       // Build the Docker image
-      // Always build from the working directory which already includes the root folder
-      const buildCommand = `cd ${workingDir} && docker build -t ${imageName} .`;
+      // If we have a root folder specified, we need to build from that subdirectory
+      const rootFolder = project.rootFolder || '/';
+      const isSubDir = rootFolder && rootFolder !== '/';
 
-      logs += `\nBuilding Docker image from directory: ${workingDir}\n`;
+      let buildCommand;
+      if (isSubDir) {
+        // If we have a subdirectory, we need to build from that directory
+        // This ensures the Docker context is correct
+        buildCommand = `cd ${workingDir} && docker build -t ${imageName} .`;
+        logs += `\nBuilding Docker image from subdirectory: ${workingDir}\n`;
+      } else {
+        // Otherwise, build from the working directory
+        buildCommand = `cd ${workingDir} && docker build -t ${imageName} .`;
+        logs += `\nBuilding Docker image from directory: ${workingDir}\n`;
+      }
+
       await this.updateDeploymentLogs(deploymentId, logs);
 
       logs += `\nRunning build command: ${buildCommand}\n`;
@@ -354,8 +388,28 @@ export class DeploymentWorkerService {
         .map(([key, value]) => `-e ${key}=${value}`)
         .join(' ');
 
-      // Determine the port to expose (default to 3000 for Node.js)
-      const port = 3000;
+      // Find an available port to expose
+      const port = await this.findAvailablePort(3000, 4000);
+      
+      // Add the port to the environment variables for the application
+      envVars['PORT'] = port.toString();
+      envVars['OCEAN_ASSIGNED_PORT'] = port.toString();
+      envVars['OCEAN_APP_URL'] = `http://localhost:${port}`;
+      
+      // Update the .env file with the new port
+      const updatedEnvFileContent = Object.entries(envVars)
+        .map(([key, value]) => `${key}=${value}`)
+        .join('\n');
+      
+      fs.writeFileSync(envFilePath, updatedEnvFileContent);
+      logs += `\nUpdated .env file with assigned port: ${port}\n`;
+      await this.updateDeploymentLogs(deploymentId, logs);
+      
+      // Save the port to the database for future reference
+      await this.prisma.deployment.update({
+        where: { id: deploymentId },
+        data: { containerPort: port }
+      });
 
       // Run the container with resource limits and restart policy for isolation and recovery
       const { stdout: runStdout, stderr: runStderr } = await execAsync(
@@ -368,15 +422,86 @@ export class DeploymentWorkerService {
         --security-opt=no-new-privileges \
         --cap-drop=ALL \
         --network=bridge \
-        --health-cmd="wget --no-verbose --tries=1 --spider http://localhost:${port} || exit 1" \
+        --health-cmd="wget --no-verbose --tries=3 --timeout=5 --spider http://localhost:${port} || curl -s --head http://localhost:${port} || exit 1" \
         --health-interval=30s \
         --health-timeout=10s \
         --health-retries=3 \
-        -p ${port}:${port} ${envArgs} ${imageName}`
+        -p ${port}:${port} \
+        -e PORT=${port} \
+        -e OCEAN_ASSIGNED_PORT=${port} \
+        ${envArgs} ${imageName}`
       );
 
       logs += runStdout + runStderr;
       logs += `\nContainer ${containerName} is now running on port ${port} with resource limits and health monitoring\n`;
+      logs += `\nYour application is accessible at: http://localhost:${port}/\n`;
+      
+      // Verify that the container is running correctly
+      logs += `\nVerifying container status...\n`;
+      await this.updateDeploymentLogs(deploymentId, logs);
+      
+      // Wait a moment for the container to initialize
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Check container status
+      try {
+        const { stdout: statusOutput } = await execAsync(`docker inspect --format='{{.State.Status}}' ${containerName}`);
+        const containerStatus = statusOutput.trim();
+        
+        logs += `\nContainer status: ${containerStatus}\n`;
+        
+        if (containerStatus === 'running') {
+          logs += `\nContainer is running successfully!\n`;
+          
+          // Wait a bit longer and check if the container is still running (to catch quick crashes)
+          await new Promise(resolve => setTimeout(resolve, 3000));
+          const { stdout: statusAfterWait } = await execAsync(`docker inspect --format='{{.State.Status}}' ${containerName}`);
+          
+          if (statusAfterWait.trim() !== 'running') {
+            logs += `\nWARNING: Container status changed to ${statusAfterWait.trim()} after initialization\n`;
+            logs += `\nChecking container logs for errors...\n`;
+            
+            // Get container logs to help diagnose the issue
+            const { stdout: containerLogs } = await execAsync(`docker logs ${containerName}`);
+            logs += `\nContainer logs:\n${containerLogs}\n`;
+          }
+        } else {
+          logs += `\nWARNING: Container is not running. Status: ${containerStatus}\n`;
+          logs += `\nChecking container logs for errors...\n`;
+          
+          // Get container logs to help diagnose the issue
+          const { stdout: containerLogs } = await execAsync(`docker logs ${containerName}`);
+          logs += `\nContainer logs:\n${containerLogs}\n`;
+        }
+      } catch (error) {
+        logs += `\nError checking container status: ${error.message}\n`;
+      }
+      
+      // Check if the port is accessible
+      logs += `\nChecking if port ${port} is accessible...\n`;
+      await this.updateDeploymentLogs(deploymentId, logs);
+      
+      try {
+        // Try to connect to the port
+        await this.checkPortAccessible('localhost', port, 5000); // 5 second timeout
+        logs += `\nPort ${port} is accessible! Your application should be available.\n`;
+      } catch (error) {
+        logs += `\nWARNING: Could not connect to port ${port}: ${error.message}\n`;
+        logs += `\nThis may indicate that your application is not listening on the correct port.\n`;
+        logs += `\nMake sure your application listens on the port specified by the PORT environment variable.\n`;
+        
+        // Add example code for common frameworks
+        logs += `\nExample code for Express.js:\n`;
+        logs += `const port = process.env.PORT || 3000;\n`;
+        logs += `app.listen(port, () => console.log(\`Server running on port \${port}\`));\n\n`;
+        
+        logs += `Example code for Next.js (in next.config.js):\n`;
+        logs += `module.exports = {\n`;
+        logs += `  env: {\n`;
+        logs += `    PORT: process.env.PORT || 3000\n`;
+        logs += `  }\n`;
+        logs += `};\n`;
+      }
 
       // Set up container monitoring
       logs += `\nSetting up container monitoring...\n`;
@@ -425,7 +550,7 @@ export class DeploymentWorkerService {
 
   private generateNodejsDockerfile(project: any): string {
     // Default Node.js version
-    const nodeVersion = '18';
+    const nodeVersion = '23';
 
     // Use project's specified commands or fallback to defaults
     // Log the commands we're using to help with debugging
@@ -435,13 +560,6 @@ export class DeploymentWorkerService {
     const buildCommand = project.buildCommand || '';
     const startCommand = project.startCommand || 'npm start';
 
-    // Get the root folder to determine if we need to use a subdirectory
-    const rootFolder = project.rootFolder || '/';
-    const isSubDir = rootFolder && rootFolder !== '/';
-
-    // Extract the subdirectory path without leading slash
-    const subDirPath = isSubDir ? rootFolder.replace(/^\//, '') : '';
-
     // Generate a simple Dockerfile
     let dockerfile = `FROM node:${nodeVersion}-alpine
 
@@ -450,17 +568,12 @@ WORKDIR /app
 `;
 
     // Copy package files first (for better layer caching)
-    if (isSubDir) {
-      dockerfile += `# Copy package.json and package-lock.json from the correct subdirectory
-COPY ${subDirPath}/package*.json ./
-
-`;
-    } else {
-      dockerfile += `# Copy package.json and package-lock.json
+    // When building from a subdirectory, we're already in that context
+    // so we don't need to specify the subdirectory path in the COPY command
+    dockerfile += `# Copy package.json and package-lock.json
 COPY package*.json ./
 
 `;
-    }
 
     // Install dependencies
     dockerfile += `# Install dependencies
@@ -469,17 +582,11 @@ RUN ${installCommand}
 `;
 
     // Copy the rest of the application
-    if (isSubDir) {
-      dockerfile += `# Copy the rest of the application from the correct subdirectory
-COPY ${subDirPath}/. .
-
-`;
-    } else {
-      dockerfile += `# Copy the rest of the application
+    // When building from a subdirectory, we're already in that context
+    dockerfile += `# Copy the rest of the application
 COPY . .
 
 `;
-    }
 
     // Add build command if specified
     if (buildCommand) {
@@ -489,15 +596,16 @@ RUN ${buildCommand}
 `;
     }
 
-    // Expose port 3000 by default for Node.js applications
+    // Expose the port the app runs on (using PORT environment variable)
     dockerfile += `# Expose the port the app runs on
-EXPOSE 3000
+EXPOSE \${PORT:-3000}
 
 `;
 
-    // Add environment variable
-    dockerfile += `# Set environment to production
+    // Add environment variables
+    dockerfile += `# Set environment variables
 ENV NODE_ENV=production
+ENV PORT=\${PORT:-3000}
 
 `;
 
@@ -509,6 +617,116 @@ CMD ${startCommand.startsWith('[') ? startCommand : `["sh", "-c", "${startComman
     return dockerfile;
   }
 
+
+  /**
+   * Find an available port in the specified range
+   * @param startPort - The port to start checking from
+   * @param endPort - The port to end checking at
+   * @returns An available port number
+   */
+  private async findAvailablePort(startPort: number, endPort: number): Promise<number> {
+    this.logger.debug(`Finding available port between ${startPort} and ${endPort}`);
+    
+    // First check if any existing deployments are using ports in our range
+    const existingDeployments = await this.prisma.deployment.findMany({
+      where: {
+        status: 'completed',
+        containerPort: {
+          gte: startPort,
+          lte: endPort
+        }
+      },
+      select: {
+        containerPort: true
+      }
+    });
+    
+    // Create a set of ports that are already in use
+    const usedPorts = new Set(existingDeployments.map(d => d.containerPort));
+    this.logger.debug(`Ports already in use by deployments: ${Array.from(usedPorts).join(', ')}`);
+    
+    // Try each port in the range
+    for (let port = startPort; port <= endPort; port++) {
+      // Skip ports that are already used by deployments
+      if (usedPorts.has(port)) {
+        this.logger.debug(`Skipping port ${port} as it's used by an existing deployment`);
+        continue;
+      }
+      
+      try {
+        // Check if port is in use using lsof
+        const { stdout } = await execAsync(`lsof -i:${port} || echo 'PORT_FREE'`);
+        
+        if (stdout.includes('PORT_FREE')) {
+          this.logger.debug(`Found available port: ${port}`);
+          return port;
+        } else {
+          this.logger.debug(`Port ${port} is in use according to lsof`);
+        }
+      } catch (error) {
+        // If command fails, the port is likely available
+        this.logger.debug(`Port ${port} appears to be available (lsof command failed)`);
+        return port;
+      }
+    }
+    
+    // If no ports are available in the range, try to find a port outside the range
+    const extendedEndPort = endPort + 1000; // Try 1000 more ports
+    this.logger.warn(`No available ports found between ${startPort} and ${endPort}, trying extended range up to ${extendedEndPort}`);
+    
+    for (let port = endPort + 1; port <= extendedEndPort; port++) {
+      try {
+        const { stdout } = await execAsync(`lsof -i:${port} || echo 'PORT_FREE'`);
+        
+        if (stdout.includes('PORT_FREE')) {
+          this.logger.debug(`Found available port in extended range: ${port}`);
+          return port;
+        }
+      } catch (error) {
+        this.logger.debug(`Port ${port} in extended range appears to be available`);
+        return port;
+      }
+    }
+    
+    // If still no ports are available, generate a random port as last resort
+    const randomPort = Math.floor(Math.random() * 10000) + 10000; // Random port between 10000-20000
+    this.logger.warn(`No available ports found in extended range, using random port: ${randomPort}`);
+    return randomPort;
+  }
+
+  /**
+   * Check if a port is accessible by attempting to connect to it
+   * @param host - The host to connect to
+   * @param port - The port to connect to
+   * @param timeout - Timeout in milliseconds
+   */
+  private checkPortAccessible(host: string, port: number, timeout: number): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const net = require('net');
+      const socket = new net.Socket();
+      
+      // Set timeout
+      socket.setTimeout(timeout);
+      
+      // Attempt to connect
+      socket.connect(port, host, () => {
+        socket.end();
+        resolve();
+      });
+      
+      // Handle timeout
+      socket.on('timeout', () => {
+        socket.destroy();
+        reject(new Error(`Connection timeout after ${timeout}ms`));
+      });
+      
+      // Handle errors
+      socket.on('error', (err) => {
+        socket.destroy();
+        reject(err);
+      });
+    });
+  }
 
   private async runCommandWithEnv(
     command: string,
