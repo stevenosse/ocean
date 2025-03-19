@@ -392,7 +392,7 @@ CMD ${startCommand}`;
 
         try {
             // Stop any existing ngrok tunnel for this project
-            const stopNgrokScriptPath = path.join(process.cwd(), '../scripts/stop-ngrok.sh');
+            const stopNgrokScriptPath = path.join(process.cwd(), 'scripts/stop-ngrok.sh');
             logs += '\nStopping any existing ngrok tunnels for this project...\n';
             try {
                 const { stdout: stopNgrokOutput } = await execAsync(`${stopNgrokScriptPath} ${project.id}`);
@@ -557,7 +557,7 @@ CMD ${startCommand}`;
             await updateLogs(logs);
             
             try {
-                const ngrokScriptPath = path.join(process.cwd(), '../scripts/setup-ngrok.sh');
+                const ngrokScriptPath = path.join(process.cwd(), 'scripts/setup-ngrok.sh');
                 const ngrokCommand = `${ngrokScriptPath} ${project.id} ${port}`;
                 
                 const { stdout: ngrokOutput } = await execAsync(ngrokCommand);
