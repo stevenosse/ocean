@@ -37,6 +37,7 @@ model Project {
   updatedAt            DateTime          @default(now()) @updatedAt @map("updated_at")
   deployments          Deployment[]
   environments         Environment[]
+  managedDatabases     ManagedDatabase[]
 
   @@map("projects")
 }
@@ -75,4 +76,28 @@ model Environment {
 
   @@unique([projectId, key])
   @@map("environments")
+}
+
+model ManagedDatabase {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  name      String   @unique
+  username  String
+  password  String
+  host      String
+  port      Int      @default(5432)
+  projectId Int?
+  project   Project? @relation(fields: [projectId], references: [id])
+  backups   DatabaseBackup[]
+}
+
+model DatabaseBackup {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  databaseId  Int
+  database    ManagedDatabase @relation(fields: [databaseId], references: [id])
+  backupPath  String
+  size        Int
+  status      String
 }

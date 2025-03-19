@@ -55,39 +55,7 @@ Set up your `ngrok` authtoken to authenticate your tunnels. Replace `<your-autht
 ngrok authtoken <your-authtoken>
 ```
 
-### 3. Configure CORS in the backend
-
-The frontend will make requests from `https://dove-picked-internally.ngrok-free.app` to the backend’s dynamically generated `ngrok` URL. To allow these cross-origin requests, configure CORS in the NestJS backend.
-
-Edit `backend/src/main.ts` to enable CORS:
-
-```typescript
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-
-  // Allow CORS for the frontend's ngrok domain
-  app.enableCors({
-    origin: 'https://dove-picked-internally.ngrok-free.app',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: true,
-  });
-
-  await app.listen(3000);
-}
-
-bootstrap();
-```
-
-Alternatively, for development, you can allow all origins (less secure):
-
-```typescript
-app.enableCors();
-```
-
-### 4. Run the deployment script
+### 3. Run the deployment script
 
 Execute the script to deploy your project:
 

@@ -6,6 +6,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { GithubModule } from './github/github.module';
 import { EnvironmentsModule } from './environments/environments.module';
+import { DatabaseModule } from './database/database.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { EnvironmentsModule } from './environments/environments.module';
     DeploymentsModule,
     EnvironmentsModule,
     WebhooksModule,
+    DatabaseModule,
   ],
 })
 export class AppModule {}
