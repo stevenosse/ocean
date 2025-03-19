@@ -23,9 +23,12 @@
           </svg>
           Edit Project
         </NuxtLink>
-        <NuxtLink :to="`/projects/${$route.params.id}/deployments`" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-          <svg class="-ml-1 mr-2 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        <NuxtLink :to="`/projects/${$route.params.id}/deployments`"
+          class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+          <svg class="-ml-1 mr-2 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none"
+            viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
           Deployments
         </NuxtLink>
@@ -132,29 +135,45 @@
             <dl>
               <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt class="text-sm font-medium text-gray-500">Install Command</dt>
-                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ project.installCommand || 'Not specified' }}</dd>
+                <dd class="mt-1 text-sm sm:mt-0 sm:col-span-2"
+                  :class="project.installCommand ? 'text-gray-900' : 'text-gray-500'">
+                  {{ project.installCommand || 'Not specified' }}
+                </dd>
               </div>
               <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt class="text-sm font-medium text-gray-500">Build Command</dt>
-                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ project.buildCommand || 'Not specified'
-                  }}</dd>
+                <dd class="mt-1 text-sm sm:mt-0 sm:col-span-2"
+                  :class="project.buildCommand ? 'text-gray-900' : 'text-gray-500'">
+                  {{ project.buildCommand || 'npm run build' }}
+                </dd>
               </div>
               <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt class="text-sm font-medium text-gray-500">Start Command</dt>
-                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ project.startCommand || 'Not specified'
-                  }}</dd>
+                <dd class="mt-1 text-sm sm:mt-0 sm:col-span-2"
+                  :class="project.startCommand ? 'text-gray-900' : 'text-gray-500'">
+                  {{ project.startCommand || 'npm run start' }}
+                </dd>
               </div>
               <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt class="text-sm font-medium text-gray-500">Output Directory</dt>
-                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ project.outputDirectory || 'Not specified' }}</dd>
+                <dd class="mt-1 text-sm sm:mt-0 sm:col-span-2"
+                  :class="project.outputDirectory ? 'text-gray-900' : 'text-gray-500'">
+                  {{ project.outputDirectory || 'dist' }}
+                </dd>
               </div>
               <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt class="text-sm font-medium text-gray-500">Docker Compose File</dt>
-                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ project.dockerComposeFile || 'Default (docker - compose.yml)' }}</dd>
+                <dd class="mt-1 text-sm sm:mt-0 sm:col-span-2"
+                  :class="project.dockerComposeFile ? 'text-gray-900' : 'text-gray-500'">
+                  {{ project.dockerComposeFile || 'Default (docker-compose.yml)' }}
+                </dd>
               </div>
               <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt class="text-sm font-medium text-gray-500">Docker Service Name</dt>
-                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ project.dockerServiceName || 'Not specified' }}</dd>
+                <dd class="mt-1 text-sm sm:mt-0 sm:col-span-2"
+                  :class="project.dockerServiceName ? 'text-gray-900' : 'text-gray-500'">
+                  {{ project.dockerServiceName || 'Not specified' }}
+                </dd>
               </div>
             </dl>
           </div>
