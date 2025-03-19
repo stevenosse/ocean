@@ -79,7 +79,7 @@ export class DeploymentsService {
       });
 
       const project = await this.projectsService.findOne(deployment.projectId);
-      const repoDir = path.join(process.cwd(), '../repos', `project-${project.id}`);
+      const repoDir = path.join(process.cwd(), process.env.DEPLOYED_APPS_DIR, `project-${project.id}`);
       
       // Create repo directory if it doesn't exist
       if (!fs.existsSync(repoDir)) {

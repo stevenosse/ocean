@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { promisify } from 'util';
 import { exec } from 'child_process';
 import { PrismaService } from '../prisma/prisma.service';
+import { DeploymentStatus } from '@prisma/client';
 
 const execAsync = promisify(exec);
 
@@ -12,7 +13,7 @@ export class ContainerHealthService {
   private readonly RETRY_DELAY = 10000; // 10 seconds
   private readonly STARTUP_GRACE_PERIOD = 30000; // 30 seconds grace period for startup
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async checkContainerHealth(deployment: any) {
     const { id, containerName, containerPort } = deployment;
@@ -112,14 +113,19 @@ export class ContainerHealthService {
 
       if (error.message.includes('No such container')) {
         this.logger.warn(`Container ${containerName} no longer exists. Disabling monitoring.`);
-        await this.prisma.deployment.update({
-          where: { id },
-          data: {
-            monitoringEnabled: false,
-            status: 'failed',
-            errorMessage: 'Container no longer exists'
-          }
+        const deployment = await this.prisma.deployment.findUnique({
+          where: { id }
         });
+
+        if (deployment.status != DeploymentStatus.completed) {
+          await this.prisma.deployment.update({
+            where: { id },
+            data: {
+              status: 'failed',
+              errorMessage: 'Container no longer exists'
+            }
+          });
+        }
       }
     }
   }
@@ -139,14 +145,15 @@ export class ContainerHealthService {
       // Check if we've exceeded the maximum restart attempts (5)
       if (updatedDeployment.restartCount > 5) {
         this.logger.warn(`Container ${containerName} has exceeded maximum restart attempts. Disabling monitoring.`);
-        await this.prisma.deployment.update({
-          where: { id },
-          data: {
-            monitoringEnabled: false,
-            status: 'failed',
-            errorMessage: 'Exceeded maximum restart attempts'
-          }
-        });
+        if (deployment.status != DeploymentStatus.completed) {
+          await this.prisma.deployment.update({
+            where: { id },
+            data: {
+              status: 'failed',
+              errorMessage: 'Container no longer exists'
+            }
+          });
+        }
         return;
       }
 
@@ -157,14 +164,15 @@ export class ContainerHealthService {
     } catch (error) {
       this.logger.error(`Error restarting container ${containerName}:`, error);
 
-      // Update deployment status
-      await this.prisma.deployment.update({
-        where: { id },
-        data: {
-          status: 'failed',
-          errorMessage: `Failed to restart container: ${error.message}`
-        }
-      });
+      if (deployment.status != DeploymentStatus.completed) {
+        await this.prisma.deployment.update({
+          where: { id },
+          data: {
+            status: 'failed',
+            errorMessage: 'Container no longer exists'
+          }
+        });
+      }
     }
   }
 }

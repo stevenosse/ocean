@@ -64,7 +64,7 @@ export class DockerService {
 
         // Check if this is a Node.js project by looking for package.json
         const rootFolder = project.rootFolder || '';
-        const repoDir = path.join(process.cwd(), '../repos', `project-${project.id}`);
+        const repoDir = path.join(process.cwd(), process.env.DEPLOYED_APPS_DIR, `project-${project.id}`);
 
         // Check if package.json exists in the specified root folder
         let packageJsonPath = path.join(repoDir, rootFolder, 'package.json');

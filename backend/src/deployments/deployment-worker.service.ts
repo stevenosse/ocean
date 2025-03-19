@@ -62,7 +62,7 @@ export class DeploymentWorkerService {
         throw new Error(`Project with ID ${deployment.projectId} not found`);
       }
 
-      const repoDir = path.join(process.cwd(), '../repos', `project-${project.id}`);
+      const repoDir = path.join(process.cwd(), process.env.DEPLOYED_APPS_DIR, `project-${project.id}`);
       let logs = '';
 
       // For all deployments, delete the existing repository first to ensure a clean state
