@@ -10,12 +10,14 @@ import { EnvironmentsModule } from '../environments/environments.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { DockerService } from './docker.service';
 import { ContainerHealthService } from './container-health.service';
+import { TunnelingModule } from '../tunneling/tunneling.module';
 
 @Module({
   imports: [
     forwardRef(() => ProjectsModule),
     forwardRef(() => EnvironmentsModule),
     ScheduleModule.forRoot(),
+    TunnelingModule,
   ],
   controllers: [DeploymentsController],
   providers: [

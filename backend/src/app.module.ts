@@ -7,6 +7,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { GithubModule } from './github/github.module';
 import { EnvironmentsModule } from './environments/environments.module';
 import { DatabaseModule } from './database/database.module';
+import { TunnelingModule } from './tunneling/tunneling.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { DatabaseModule } from './database/database.module';
     EnvironmentsModule,
     WebhooksModule,
     DatabaseModule,
+    TunnelingModule,
   ],
 })
 export class AppModule {}

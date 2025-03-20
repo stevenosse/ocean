@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { promisify } from 'util';
 import { exec } from 'child_process';
 import { PrismaService } from '../prisma/prisma.service';
-import { DeploymentStatus } from '@prisma/client';
+import { Deployment, DeploymentStatus } from '@prisma/client';
 
 const execAsync = promisify(exec);
 
@@ -15,7 +15,13 @@ export class ContainerHealthService {
 
   constructor(private readonly prisma: PrismaService) { }
 
-  async checkContainerHealth(deployment: any) {
+  async checkContainerHealth(deploymentId: number) {
+    const deployment = await this.prisma.deployment.findUnique({
+      where: { id: deploymentId },
+      include: {
+        project: true,
+      }
+    });
     const { id, containerName, containerPort } = deployment;
 
     try {
