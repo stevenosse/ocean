@@ -5,7 +5,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { DeploymentLogsService } from './deployment-logs.service';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { ContainerMonitorService } from './container-monitor.service';
+import { ContainerHealthService } from './container-health.service';
+import { TunnelingService } from '../tunneling/tunneling.service';
+import { Deployment, Project } from '@prisma/client';
 
 const execAsync = promisify(exec);
 
@@ -13,8 +15,9 @@ const execAsync = promisify(exec);
 export class DockerService {
     constructor(
         private logsService: DeploymentLogsService,
-        private containerMonitoringService: ContainerMonitorService,
+        private containerHealthService: ContainerHealthService,
         private prisma: PrismaService,
+        private tunnelingService: TunnelingService,
     ) { }
 
     /**
@@ -157,7 +160,7 @@ export class DockerService {
         await updateLogs(logs);
 
         // Build and run the Docker container
-        await this.buildAndRunContainer(project, workingDir, processedEnvVars.envVars, updateLogs, updateDeployment);
+        await this.buildAndRunContainer(project, deploymentId, workingDir, processedEnvVars.envVars, updateLogs, updateDeployment);
     }
 
     /**
@@ -380,7 +383,8 @@ CMD ${startCommand}`;
     }
 
     private async buildAndRunContainer(
-        project: any,
+        project: Project,
+        deploymentId: number,
         workingDir: string,
         envVars: Record<string, string>,
         updateLogs: (logs: string) => Promise<void>,
@@ -392,17 +396,16 @@ CMD ${startCommand}`;
 
         try {
             // Stop any existing ngrok tunnel for this project
-            const stopNgrokScriptPath = path.join(process.cwd(), 'scripts/stop-ngrok.sh');
             logs += '\nStopping any existing ngrok tunnels for this project...\n';
             try {
-                const { stdout: stopNgrokOutput } = await execAsync(`${stopNgrokScriptPath} ${project.id}`);
-                logs += stopNgrokOutput + '\n';
+                await this.tunnelingService.stopTunnel(project.id);
+                logs += 'Successfully stopped existing tunnel\n';
             } catch (error) {
                 logs += `Warning: Failed to stop ngrok tunnel: ${error.message}\n`;
                 // Continue deployment even if ngrok stop fails
             }
             await updateLogs(logs);
-            
+
             // Clean up existing container
             await execAsync(`docker stop ${containerName} || true`);
             await execAsync(`docker rm ${containerName} || true`);
@@ -464,85 +467,24 @@ CMD ${startCommand}`;
             logs += '\nWaiting for container to be healthy...\n';
             await updateLogs(logs);
 
-            const MAX_RETRIES = 3;
-            const RETRY_DELAY = 10000; // 10 seconds
-            const startTime = Date.now();
-            let isHealthy = false;
-            let retries = 0;
+            // Update deployment status
+            await updateDeployment({
+                status: 'completed',
+                containerName,
+                containerPort: port
+            });
 
-            // Check if container is running
-            const { stdout } = await execAsync(`docker inspect --format='{{json .State}}' ${containerName}`);
-            const containerState = JSON.parse(stdout.trim());
-            const containerStatus = containerState.Status;
+            try {
+                await new Promise(resolve => setTimeout(resolve, 5000));
 
-            logs += `\nContainer status: ${containerStatus}, Health: ${containerState.Health?.Status || 'no healthcheck'}\n`;
-            await updateLogs(logs);
+                await this.containerHealthService.checkContainerHealth(deploymentId);
 
-            if (containerStatus !== 'running') {
-                throw new Error(`Container ${containerName} is not running (status: ${containerStatus})`);
-            }
-
-            // Check Docker's built-in health status if available
-            if (containerState.Health) {
-                const healthStatus = containerState.Health.Status;
-                if (healthStatus === 'healthy') {
-                    logs += `\nContainer is healthy according to Docker healthcheck\n`;
-                    await updateLogs(logs);
-                    return;
-                } else if (healthStatus === 'unhealthy') {
-                    const { stdout: healthLog } = await execAsync(
-                        `docker inspect --format='{{json .State.Health.Log}}' ${containerName}`
-                    );
-                    const healthLogs = JSON.parse(healthLog);
-                    if (healthLogs.length > 0) {
-                        const lastCheck = healthLogs[healthLogs.length - 1];
-                        logs += `\nLast health check output: ${lastCheck.Output}\n`;
-                        await updateLogs(logs);
-                    }
-                    throw new Error(`Container is unhealthy according to Docker healthcheck`);
-                }
-            }
-
-            // Manual health check using HTTP endpoints
-            while (!isHealthy && retries < MAX_RETRIES) {
-                try {
-                    // Try health endpoint first (expecting 2xx/3xx)
-                    const { stdout: healthResponse } = await execAsync(
-                        `curl --silent --connect-timeout 5 --max-time 10 -w "%{http_code}" http://localhost:${port}/health`
-                    );
-                    const healthStatusCode = healthResponse.trim().slice(-3);
-
-                    if (healthStatusCode.match(/^[23]\d\d$/)) {
-                        isHealthy = true;
-                        logs += `\nContainer is healthy (status ${healthStatusCode} on /health)\n`;
-                        await updateLogs(logs);
-                    } else {
-                        // Fallback to root path, accepting 2xx/3xx or 404
-                        const { stdout: rootResponse } = await execAsync(
-                            `curl --silent --connect-timeout 5 --max-time 10 -w "%{http_code}" http://localhost:${port}`
-                        );
-                        const rootStatusCode = rootResponse.trim().slice(-3);
-
-                        if (rootStatusCode.match(/^[23]\d\d$/) || rootStatusCode === '404') {
-                            isHealthy = true;
-                            logs += `\nContainer is healthy (status ${rootStatusCode} on /)\n`;
-                            await updateLogs(logs);
-                        } else {
-                            throw new Error(`Unexpected status code: ${rootStatusCode}`);
-                        }
-                    }
-                } catch (error) {
-                    retries++;
-                    logs += `\nHealth check attempt ${retries}/${MAX_RETRIES} failed: ${error.message}\n`;
-                    await updateLogs(logs);
-                    if (retries < MAX_RETRIES) {
-                        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-                    }
-                }
-            }
-
-            if (!isHealthy) {
-                throw new Error(`Container is not responding on port ${port} after ${MAX_RETRIES} attempts`);
+                logs += `\nContainer health check passed\n`;
+                await updateLogs(logs);
+            } catch (error) {
+                logs += `\nContainer health check failed: ${error.message}\n`;
+                await updateLogs(logs);
+                throw new Error(`Container health check failed: ${error.message}`);
             }
 
             // Update deployment info
@@ -551,39 +493,20 @@ CMD ${startCommand}`;
                 containerPort: port,
                 monitoringEnabled: true
             });
-            
+
             // Set up ngrok tunnel for the container
             logs += '\nSetting up ngrok tunnel for the application...\n';
             await updateLogs(logs);
-            
+
             try {
-                const ngrokScriptPath = path.join(process.cwd(), 'scripts/setup-ngrok.sh');
-                const ngrokCommand = `${ngrokScriptPath} ${project.id} ${port}`;
-                
-                const { stdout: ngrokOutput } = await execAsync(ngrokCommand);
-                logs += ngrokOutput + '\n';
-                
-                // Extract the tunnel URL from ngrok output
-                const tunnelUrlMatch = ngrokOutput.match(/URL: (https:\/\/[^\s]+)/);
-                if (tunnelUrlMatch && tunnelUrlMatch[1]) {
-                    const tunnelUrl = tunnelUrlMatch[1];
-                    logs += `Application is accessible at: ${tunnelUrl}\n`;
-                    
-                    // Update the project's application URL in the database
-                    await this.prisma.project.update({
-                        where: { id: project.id },
-                        data: { applicationUrl: tunnelUrl }
-                    });
-                    
-                    logs += 'Successfully updated application URL in database\n';
-                } else {
-                    logs += 'Warning: No tunnel URL was obtained from ngrok\n';
-                }
+                const tunnelUrl = await this.tunnelingService.createTunnel(project.id, port);
+                logs += `Application is accessible at: ${tunnelUrl}\n`;
+                logs += 'Successfully updated application URL in database\n';
             } catch (error) {
                 logs += `Warning: Failed to set up ngrok tunnel: ${error.message}\n`;
                 // Continue deployment even if ngrok setup fails
             }
-            
+
             await updateLogs(logs);
 
             // Update .env file
