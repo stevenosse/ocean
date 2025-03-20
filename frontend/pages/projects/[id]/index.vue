@@ -91,7 +91,7 @@
       <!-- Tabs Navigation -->
       <div class="border-b border-gray-200 mt-8">
         <nav class="-mb-px flex space-x-10" aria-label="Tabs">
-          <button v-for="tab in tabs" :key="tab.name" @click="currentTab = tab.name" :class="[
+          <button v-for="tab in tabs" :key="tab.name" @click="switchTab(tab.name)" :class="[
         currentTab === tab.name
           ? 'border-blue-500 text-blue-600'
           : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
@@ -345,6 +345,14 @@ const tabs = [
 ]
 const currentTab = ref('Overview')
 
+// Get tab from URL query parameter if available
+onMounted(() => {
+  const tabParam = route.query.tab as string
+  if (tabParam && tabs.some(tab => tab.name === tabParam)) {
+    currentTab.value = tabParam
+  }
+})
+
 onMounted(async () => {
   try {
     const id = Number(route.params.id)
@@ -409,5 +417,16 @@ const triggerDeploy = async () => {
     console.error('Error triggering deployment:', error)
     toast.error('Failed to trigger deployment', 'Please try again.')
   }
+}
+
+const switchTab = (tabName: string) => {
+  currentTab.value = tabName
+  
+  router.replace({ 
+    query: { 
+      ...route.query,
+      tab: tabName 
+    }
+  })
 }
 </script>
