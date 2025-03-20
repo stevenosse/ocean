@@ -22,6 +22,6 @@ if [ -S ~/.ssh/control-${TUNNEL_NAME}.sock ]; then
   rm -f ~/.ssh/control-${TUNNEL_NAME}.sock
 fi
 
-ssh tunneluser@${REMOTE_HOST} "sudo sed -i '/^${PROJECT_ID} [0-9]\+;$/d' /etc/nginx/project-ports.conf && sudo nginx -s reload"
+# No need to update nginx configuration when using direct IP:port
 
 echo "Tunnel stopped for project $PROJECT_ID"

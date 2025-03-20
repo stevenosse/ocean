@@ -3,7 +3,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as path from 'path';
-import { sanitizeForSubdomain } from './utils/string-utils';
 
 const execAsync = promisify(exec);
 
@@ -11,13 +10,11 @@ const execAsync = promisify(exec);
 export class SshTunnelingService {
   private readonly logger = new Logger(SshTunnelingService.name);
   private readonly remoteHost: string;
-  private readonly tunnelSubdomain: string;
   private readonly basePort: number;
 
   constructor(private readonly prisma: PrismaService) {
     // Load configuration from environment variables or use defaults
     this.remoteHost = process.env.SSH_TUNNEL_HOST || 'tunnel.example.com';
-    this.tunnelSubdomain = process.env.SSH_TUNNEL_SUBDOMAIN || 'tunnel.example.com';
     this.basePort = parseInt(process.env.SSH_TUNNEL_BASE_PORT || '10000', 10);
   }
 
@@ -57,12 +54,10 @@ export class SshTunnelingService {
         throw new Error(`Project with ID ${projectId} not found`);
       }
 
-      // Sanitize project name for use in subdomain and ensure uniqueness with project ID
-      const sanitizedName = sanitizeForSubdomain(project.name, projectId);
-
       // Set up SSH tunnel for the container
       const sshScriptPath = path.join(process.cwd(), 'scripts/setup-ssh-tunnel.sh');
-      const sshCommand = `${sshScriptPath} ${projectId} ${port} ${remotePort} ${this.remoteHost} "${sanitizedName}"`;
+      // We're using IP:port format now, so we don't need the sanitized name for subdomains
+      const sshCommand = `${sshScriptPath} ${projectId} ${port} ${remotePort} ${this.remoteHost}`;
 
       const { stdout: sshOutput } = await execAsync(sshCommand);
 

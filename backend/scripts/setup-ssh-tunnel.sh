@@ -42,9 +42,9 @@ if [ -z "$PID" ]; then
   exit 1
 fi
 
-ssh tunneluser@${REMOTE_HOST} "echo '$SUBDOMAIN_NAME $REMOTE_PORT;' | sudo tee -a /etc/nginx/project-ports.conf && sudo nginx -s reload"
+# No need to update nginx configuration when using direct IP:port
 
-PUBLIC_URL="http://${SUBDOMAIN_NAME}.tunnel.trybefit.app"
+PUBLIC_URL="http://${REMOTE_HOST}:${REMOTE_PORT}"
 
 echo "Tunnel established for project $PROJECT_ID"
 echo "Remote port: $REMOTE_PORT"
