@@ -29,11 +29,23 @@ export class DeploymentWorkerService {
 
   async startDeployment(deployment: Deployment): Promise<void> {
     try {
-      // Update status to in progress
-      await this.prisma.deployment.update({
-        where: { id: deployment.id },
-        data: { status: DeploymentStatus.in_progress }
-      });
+      // Update status to in progress and disable monitoring for previous deployments of this project
+      await this.prisma.$transaction([
+        // Disable monitoring for all previous deployments of this project
+        this.prisma.deployment.updateMany({
+          where: {
+            projectId: deployment.projectId,
+            id: { not: deployment.id },
+            monitoringEnabled: true
+          },
+          data: { monitoringEnabled: false }
+        }),
+        // Update current deployment status
+        this.prisma.deployment.update({
+          where: { id: deployment.id },
+          data: { status: DeploymentStatus.in_progress }
+        })
+      ]);
 
       // Retrieve the project with all fields, especially build commands
       const project = await this.prisma.project.findUnique({

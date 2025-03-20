@@ -12,6 +12,7 @@ export class ContainerHealthService {
   private readonly MAX_RETRIES = 5;
   private readonly RETRY_DELAY = 10000; // 10 seconds
   private readonly STARTUP_GRACE_PERIOD = 30000; // 30 seconds grace period for startup
+  private readonly MONITORING_DURATION = 3600000; // 1 hour of monitoring after successful deployment
 
   constructor(private readonly prisma: PrismaService) { }
 
@@ -52,6 +53,21 @@ export class ContainerHealthService {
         : Infinity;
       if (startupTime < this.STARTUP_GRACE_PERIOD) {
         this.logger.debug(`Container ${containerName} is within startup grace period (${Math.round(startupTime / 1000)}s/${this.STARTUP_GRACE_PERIOD / 1000}s)`);
+        return;
+      }
+      
+      // Check if we should disable monitoring after successful period
+      const deploymentCompletedTime = deployment.completedAt
+        ? Date.now() - new Date(deployment.completedAt).getTime()
+        : 0;
+      if (deploymentCompletedTime > this.MONITORING_DURATION) {
+        this.logger.log(`Container ${containerName} has been stable for ${Math.round(deploymentCompletedTime / 60000)} minutes. Disabling monitoring.`);
+        await this.prisma.deployment.update({
+          where: { id },
+          data: {
+            monitoringEnabled: false
+          }
+        });
         return;
       }
 

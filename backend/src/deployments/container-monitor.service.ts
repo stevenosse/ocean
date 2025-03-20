@@ -18,21 +18,22 @@ export class ContainerMonitorService {
     this.logger.log('Running container health check...');
 
     try {
-      // Get all deployments with monitoring enabled
-      const deployments = await this.prisma.deployment.findMany({
-        where: {
-          monitoringEnabled: true,
-          containerName: { not: null },
-          status: 'completed'
-        },
-        include: {
-          project: true
-        }
-      });
+      // Get the latest deployment for each project with monitoring enabled
+      const latestDeployments: [Deployment] = await this.prisma.$queryRaw`
+        SELECT d.* FROM deployments d
+        INNER JOIN (
+          SELECT project_id, MAX(id) as max_id
+          FROM deployments
+          WHERE monitoring_enabled = true
+            AND container_name IS NOT NULL
+            AND status = 'completed'
+          GROUP BY project_id
+        ) latest ON d.id = latest.max_id
+      `;
 
-      this.logger.log(`Found ${deployments.length} deployments to monitor`);
+      this.logger.log(`Found ${latestDeployments.length} latest deployments to monitor`);
 
-      for (const deployment of deployments) {
+      for (const deployment of latestDeployments) {
         await this.checkContainerHealth(deployment);
       }
     } catch (error) {
