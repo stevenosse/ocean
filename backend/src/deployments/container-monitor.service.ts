@@ -41,6 +41,6 @@ export class ContainerMonitorService {
   }
 
   async checkContainerHealth(deployment: Deployment) {
-    await this.containerHealthService.checkContainerHealth(deployment);
+    await this.containerHealthService.checkContainerHealth(deployment.id);
   }
 }

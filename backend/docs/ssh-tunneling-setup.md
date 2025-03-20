@@ -16,8 +16,8 @@ This document explains how to set up the SSH tunneling server for Ocean's deploy
 ### 1. Create a dedicated user for tunneling
 
 ```bash
-sudo useradd -m -s /bin/bash tunnel
-sudo passwd tunnel  # Set a strong password
+sudo useradd -m -s /bin/bash tunneluser
+sudo passwd tunneluser  # Set a strong password
 ```
 
 ### 2. Configure SSH server
@@ -41,10 +41,10 @@ On your Ocean backend server:
 
 ```bash
 # Generate SSH key pair
-ssh-keygen -t rsa -b 4096 -f ~/.ssh/tunnel_key -N ""
+ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ""
 
 # Copy the public key to the tunnel server
-ssh-copy-id -i ~/.ssh/tunnel_key.pub tunnel@tunnel.example.com
+ssh-copy-id -i ~/.ssh/id_rsa.pub tunneluser@tunnel.example.com
 ```
 
 ### 4. Configure DNS
@@ -109,12 +109,12 @@ SSH_TUNNEL_BASE_PORT=10000
 To test if the tunneling service is working correctly:
 
 1. Start a simple web server on your local machine: `python -m http.server 8000`
-2. Run the SSH tunnel script: `./scripts/setup-ssh-tunnel.sh 123 8000 10123 tunnel.example.com`
-3. Access the site at `https://123.tunnel.example.com`
+2. Run the SSH tunnel script: `./scripts/setup-ssh-tunnel.sh 123 8000 10123 tunnel.example.com "my-project"`
+3. Access the site at `https://my-project.tunnel.example.com`
 
 ## Troubleshooting
 
 - Check SSH server logs: `sudo journalctl -u sshd`
 - Verify firewall settings: `sudo ufw status`
-- Test SSH connection: `ssh -v tunnel@tunnel.example.com`
+- Test SSH connection: `ssh -v tunneluser@tunnel.example.com`
 - Check if the tunnel is active: `ps aux | grep ssh`

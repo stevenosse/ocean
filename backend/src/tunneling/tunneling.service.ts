@@ -12,7 +12,6 @@ export class TunnelingService {
   private readonly logger = new Logger(TunnelingService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
     private readonly sshTunnelingService: SshTunnelingService
   ) {}
 
@@ -20,17 +19,14 @@ export class TunnelingService {
    * Create a tunnel for a project
    * @param projectId The project ID
    * @param port The port to tunnel
-   * @param customDomain Optional custom domain for paid ngrok accounts
    * @returns The tunnel URL
    */
-  async createTunnel(projectId: number, port: number, customDomain?: string): Promise<string> {
+  async createTunnel(projectId: number, port: number): Promise<string> {
     this.logger.log(`Creating tunnel for project ${projectId} on port ${port}`);
     
     try {
       // Use our SSH tunneling service instead of ngrok
       const tunnelUrl = await this.sshTunnelingService.createTunnel(projectId, port);
-      
-      this.logger.log(`Tunnel created for project ${projectId}: ${tunnelUrl}`);
       return tunnelUrl;
     } catch (error) {
       this.logger.error(`Failed to create tunnel for project ${projectId}: ${error.message}`, error.stack);

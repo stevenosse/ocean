@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as path from 'path';
+import { sanitizeForSubdomain } from './utils/string-utils';
 
 const execAsync = promisify(exec);
 
@@ -10,11 +11,13 @@ const execAsync = promisify(exec);
 export class SshTunnelingService {
   private readonly logger = new Logger(SshTunnelingService.name);
   private readonly remoteHost: string;
+  private readonly tunnelSubdomain: string;
   private readonly basePort: number;
 
   constructor(private readonly prisma: PrismaService) {
     // Load configuration from environment variables or use defaults
     this.remoteHost = process.env.SSH_TUNNEL_HOST || 'tunnel.example.com';
+    this.tunnelSubdomain = process.env.SSH_TUNNEL_SUBDOMAIN || 'tunnel.example.com';
     this.basePort = parseInt(process.env.SSH_TUNNEL_BASE_PORT || '10000', 10);
   }
 
@@ -36,31 +39,44 @@ export class SshTunnelingService {
    */
   async createTunnel(projectId: number, port: number): Promise<string> {
     this.logger.log(`Creating SSH tunnel for project ${projectId} on port ${port}`);
-    
+
     try {
       // First stop any existing tunnel for this project
       await this.stopTunnel(projectId);
-      
+
       // Calculate remote port based on project ID
       const remotePort = this.calculateRemotePort(projectId);
-      
+
+      // Get project name from database
+      const project = await this.prisma.project.findUnique({
+        where: { id: projectId },
+        select: { name: true }
+      });
+
+      if (!project) {
+        throw new Error(`Project with ID ${projectId} not found`);
+      }
+
+      // Sanitize project name for use in subdomain and ensure uniqueness with project ID
+      const sanitizedName = sanitizeForSubdomain(project.name, projectId);
+
       // Set up SSH tunnel for the container
       const sshScriptPath = path.join(process.cwd(), 'scripts/setup-ssh-tunnel.sh');
-      const sshCommand = `${sshScriptPath} ${projectId} ${port} ${remotePort} ${this.remoteHost}`;
-      
+      const sshCommand = `${sshScriptPath} ${projectId} ${port} ${remotePort} ${this.remoteHost} "${sanitizedName}"`;
+
       const { stdout: sshOutput } = await execAsync(sshCommand);
-      
+
       // Extract the tunnel URL from SSH output
-      const tunnelUrlMatch = sshOutput.match(/URL: (https:\/\/[^\s]+)/);
+      const tunnelUrlMatch = sshOutput.match(/URL: (https?:\/\/[^\s]+)/);
       if (tunnelUrlMatch && tunnelUrlMatch[1]) {
         const tunnelUrl = tunnelUrlMatch[1];
-        
+
         // Update the project's application URL in the database
         await this.prisma.project.update({
           where: { id: projectId },
           data: { applicationUrl: tunnelUrl }
         });
-        
+
         this.logger.log(`SSH tunnel created for project ${projectId}: ${tunnelUrl}`);
         return tunnelUrl;
       } else {
@@ -78,7 +94,7 @@ export class SshTunnelingService {
    */
   async stopTunnel(projectId: number): Promise<void> {
     this.logger.log(`Stopping SSH tunnel for project ${projectId}`);
-    
+
     try {
       const stopSshScriptPath = path.join(process.cwd(), 'scripts/stop-ssh-tunnel.sh');
       const { stdout } = await execAsync(`${stopSshScriptPath} ${projectId}`);
@@ -116,7 +132,7 @@ export class SshTunnelingService {
       where: { id: projectId },
       select: { applicationUrl: true }
     });
-    
+
     return project?.applicationUrl || null;
   }
 

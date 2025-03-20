@@ -37,8 +37,7 @@ export const useApi = () => {
 
   const updateProject = async (id: number, project: Partial<Project>): Promise<Project | null> => {
     try {
-      // Remove properties that shouldn't be sent to the backend
-      const { id: projectId, createdAt, updatedAt, ...cleanedProject } = project;
+      const { id: projectId, createdAt, updatedAt, applicationUrl, ...cleanedProject } = project;
       
       return await $fetch<Project>(`${baseURL}/projects/${id}`, {
         method: 'PATCH',

@@ -7,7 +7,7 @@ import { DeploymentLogsService } from './deployment-logs.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ContainerHealthService } from './container-health.service';
 import { TunnelingService } from '../tunneling/tunneling.service';
-import { Deployment, Project } from '@prisma/client';
+import { Project } from '@prisma/client';
 
 const execAsync = promisify(exec);
 
@@ -395,14 +395,14 @@ CMD ${startCommand}`;
         const imageName = `ocean-project-${project.id}:latest`;
 
         try {
-            // Stop any existing ngrok tunnel for this project
-            logs += '\nStopping any existing ngrok tunnels for this project...\n';
+            // Stop any existing SSH tunnel for this project
+            logs += '\nStopping any existing SSH tunnels for this project...\n';
             try {
                 await this.tunnelingService.stopTunnel(project.id);
                 logs += 'Successfully stopped existing tunnel\n';
             } catch (error) {
-                logs += `Warning: Failed to stop ngrok tunnel: ${error.message}\n`;
-                // Continue deployment even if ngrok stop fails
+                logs += `Warning: Failed to stop SSH tunnel: ${error.message}\n`;
+                // Continue deployment even if SSH tunnel stop fails
             }
             await updateLogs(logs);
 
@@ -494,8 +494,8 @@ CMD ${startCommand}`;
                 monitoringEnabled: true
             });
 
-            // Set up ngrok tunnel for the container
-            logs += '\nSetting up ngrok tunnel for the application...\n';
+            // Set up SSH tunnel for the container
+            logs += '\nSetting up SSH tunnel for the application...\n';
             await updateLogs(logs);
 
             try {
@@ -503,8 +503,8 @@ CMD ${startCommand}`;
                 logs += `Application is accessible at: ${tunnelUrl}\n`;
                 logs += 'Successfully updated application URL in database\n';
             } catch (error) {
-                logs += `Warning: Failed to set up ngrok tunnel: ${error.message}\n`;
-                // Continue deployment even if ngrok setup fails
+                logs += `Warning: Failed to set up SSH tunnel: ${error.message}\n`;
+                // Continue deployment even if SSH tunnel setup fails
             }
 
             await updateLogs(logs);

@@ -11,14 +11,13 @@ export class TunnelingController {
   @ApiOperation({ summary: 'Create a tunnel for a project' })
   @ApiParam({ name: 'projectId', description: 'Project ID' })
   @ApiQuery({ name: 'port', description: 'Port to tunnel', required: true })
-  @ApiQuery({ name: 'customDomain', description: 'Custom domain for paid ngrok accounts', required: false })
+
   async createTunnel(
     @Param('projectId', ParseIntPipe) projectId: number,
     @Query('port', ParseIntPipe) port: number,
-    @Query('customDomain') customDomain?: string,
   ) {
     try {
-      const tunnelUrl = await this.tunnelingService.createTunnel(projectId, port, customDomain);
+      const tunnelUrl = await this.tunnelingService.createTunnel(projectId, port);
       return { success: true, tunnelUrl };
     } catch (error) {
       throw new HttpException(
