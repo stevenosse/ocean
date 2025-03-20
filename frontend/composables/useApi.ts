@@ -150,11 +150,24 @@ export const useApi = () => {
     }
   }
 
+  const deleteProject = async (id: number): Promise<boolean> => {
+    try {
+      await $fetch(`${baseURL}/projects/${id}`, {
+        method: 'DELETE'
+      })
+      return true
+    } catch (error) {
+      console.error(`Error deleting project ${id}:`, error)
+      return false
+    }
+  }
+
   return {
     fetchProjects,
     fetchProject,
     createProject,
     updateProject,
+    deleteProject,
     fetchDeployments,
     fetchDeployment,
     fetchProjectDeployments,

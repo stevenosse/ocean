@@ -3,6 +3,15 @@
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-3xl font-bold text-gray-900">{{ project?.name }}</h1>
       <div class="flex space-x-3">
+        <button @click="showDeleteModal = true"
+          class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+          <svg class="-ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
+            viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+          Delete Project
+        </button>
         <NuxtLink :to="`/projects/${$route.params.id}/environments`"
           class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
           <svg class="-ml-1 mr-2 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none"
@@ -273,12 +282,22 @@
         </div>
       </div>
     </div>
+
+    <!-- Confirmation Modal -->
+    <ConfirmationModal
+      :is-open="showDeleteModal"
+      title="Delete Project"
+      message="Are you sure you want to delete this project? This action cannot be undone and will remove all associated deployments, databases, and resources."
+      confirm-button-text="Delete"
+      @confirm="deleteProject"
+      @close="showDeleteModal = false"
+    />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useApi } from '~/composables/useApi'
 import { useToast } from '~/composables/useToast'
 import type { Project, Deployment } from '~/types'
@@ -322,6 +341,29 @@ onMounted(async () => {
 })
 
 const toast = useToast()
+const router = useRouter()
+const showDeleteModal = ref(false)
+
+const deleteProject = async () => {
+  if (!project.value) return
+
+  try {
+    const result = await api.deleteProject(project.value.id)
+    if (result) {
+      toast.success('Project deleted successfully!')
+      // Redirect to projects list
+      router.push('/projects')
+    } else {
+      toast.error('Failed to delete project', 'Please try again.')
+    }
+  } catch (error) {
+    console.error('Error deleting project:', error)
+    toast.error('Failed to delete project', 'Please try again.')
+  } finally {
+    showDeleteModal.value = false
+  }
+}
+
 const triggerDeploy = async () => {
   if (!project.value) return
 

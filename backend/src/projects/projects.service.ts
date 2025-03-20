@@ -5,12 +5,18 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Project } from '@prisma/client';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import * as fs from 'fs';
+import * as path from 'path';
+import { TunnelingService } from '../tunneling/tunneling.service';
 
 const execAsync = promisify(exec);
 
 @Injectable()
 export class ProjectsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private tunnelingService: TunnelingService
+  ) { }
 
   async create(createProjectDto: CreateProjectDto): Promise<Project> {
     return await this.prisma.project.create({
@@ -41,9 +47,63 @@ export class ProjectsService {
   }
 
   async remove(id: number): Promise<void> {
-    await this.findOne(id); // Check if project exists
-    await this.prisma.project.delete({
-      where: { id },
+    await this.findOne(id);
+
+    await this.prisma.$transaction(async (prisma) => {
+      const containerName = `ocean-project-${id}`;
+
+      try {
+        await this.tunnelingService.stopTunnel(id);
+      } catch (error) {
+        console.warn(`Failed to stop SSH tunnel for project ${id}: ${error.message}`);
+      }
+
+      try {
+        await execAsync(`docker stop ${containerName} || true`);
+        await execAsync(`docker rm ${containerName} || true`);
+      } catch (error) {
+        console.warn(`Failed to stop/remove container for project ${id}: ${error.message}`);
+      }
+
+      try {
+        const repoDir = path.join(process.cwd(), process.env.DEPLOYED_APPS_DIR, `project-${id}`);
+
+        if (fs.existsSync(repoDir)) {
+          fs.rmSync(repoDir, { recursive: true, force: true });
+        }
+      } catch (error) {
+        console.warn(`Failed to delete project files for project ${id}: ${error.message}`);
+      }
+
+      // Delete all deployments for this project
+      await prisma.deployment.deleteMany({
+        where: { projectId: id }
+      });
+
+      // Get all managed databases for this project
+      const databases = await prisma.managedDatabase.findMany({
+        where: { projectId: id }
+      });
+
+      // Delete each database
+      for (const db of databases) {
+        try {
+          await execAsync(`dropdb ${db.name} || true`);
+          await execAsync(`psql -c "DROP USER ${db.username}" || true`);
+        } catch (error) {
+          console.warn(`Failed to delete database ${db.name} for project ${id}: ${error.message}`);
+        }
+      }
+
+      // Delete managed database records
+      await prisma.managedDatabase.deleteMany({
+        where: { projectId: id }
+      });
+
+      // Finally delete the project itself
+      await prisma.project.delete({
+        where: { id }
+      });
     });
   }
 
