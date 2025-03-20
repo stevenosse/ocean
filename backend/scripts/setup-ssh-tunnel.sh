@@ -42,7 +42,7 @@ if [ -z "$PID" ]; then
   exit 1
 fi
 
-ssh tunneluser@${REMOTE_HOST} "echo '$SUBDOMAIN_NAME $REMOTE_PORT' | sudo tee -a /etc/nginx/project-ports.conf && sudo nginx -s reload"
+ssh tunneluser@${REMOTE_HOST} "echo '$SUBDOMAIN_NAME $REMOTE_PORT;' | sudo tee -a /etc/nginx/project-ports.conf && sudo nginx -s reload"
 
 PUBLIC_URL="http://${SUBDOMAIN_NAME}.tunnel.trybefit.app"
 
