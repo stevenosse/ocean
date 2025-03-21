@@ -116,7 +116,6 @@ export class ProjectsService {
     try {
       const serviceName = `ocean-project-${project.id}`
       const { stdout } = await execAsync(`docker logs --tail 1000 ${serviceName}`);
-      console.log(stdout)
       return stdout.split('\n').filter(line => line.length > 0);
     } catch (error) {
       console.error('Error fetching container logs:', error);
