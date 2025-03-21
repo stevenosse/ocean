@@ -151,11 +151,7 @@ export class DockerService {
 
         fs.writeFileSync(envFilePath, envFileContent);
 
-        if (processedEnvVars.dbConnectionsUpdated) {
-            logs = `\nCreated .env file with ${Object.keys(processedEnvVars.envVars).length} environment variables (database connections updated to use host.docker.internal)\n`;
-        } else {
-            logs = `\nCreated .env file with ${Object.keys(processedEnvVars.envVars).length} environment variables\n`;
-        }
+        logs = `\nCreated .env file with ${Object.keys(processedEnvVars.envVars).length} environment variables\n`;
 
         await updateLogs(logs);
 
@@ -402,7 +398,6 @@ CMD ${startCommand}`;
                 logs += 'Successfully stopped existing tunnel\n';
             } catch (error) {
                 logs += `Warning: Failed to stop SSH tunnel: ${error.message}\n`;
-                // Continue deployment even if SSH tunnel stop fails
             }
             await updateLogs(logs);
 

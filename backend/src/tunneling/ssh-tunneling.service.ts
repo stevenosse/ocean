@@ -88,8 +88,6 @@ export class SshTunnelingService {
    * @param projectId The project ID
    */
   async stopTunnel(projectId: number): Promise<void> {
-    this.logger.log(`Stopping SSH tunnel for project ${projectId}`);
-
     try {
       const stopSshScriptPath = path.join(process.cwd(), 'scripts/stop-ssh-tunnel.sh');
       const { stdout } = await execAsync(`${stopSshScriptPath} ${projectId}`);

@@ -11,3 +11,5 @@ dist
 .nuxt
 
 node_modules/
+
+backend/keys

@@ -32,12 +32,12 @@ else
   print_status "Homebrew is already installed."
 fi
 
-# Step 2: Check and install ngrok if not present
-if ! command -v ngrok &> /dev/null; then
-  print_status "ngrok not found. Installing ngrok..."
-  brew install ngrok/ngrok/ngrok || print_error "Failed to install ngrok."
+# Step 2: Check SSH key and setup if not present
+if [ ! -f "$HOME/.ssh/id_rsa" ]; then
+  print_status "SSH key not found. Generating new SSH key..."
+  ssh-keygen -t rsa -b 4096 -f "$HOME/.ssh/id_rsa" -N "" || print_error "Failed to generate SSH key."
 else
-  print_status "ngrok is already installed."
+  print_status "SSH key found."
 fi
 
 # Step 3: Check and install git if not present
@@ -89,23 +89,19 @@ npm run start:prod & || print_error "Failed to start the backend."
 BACKEND_PID=$!
 print_status "Backend is running with PID $BACKEND_PID on port 3000"
 
-# Step 9: Expose the backend via ngrok (dynamic URL)
-print_status "Exposing backend via ngrok (dynamic URL)..."
-ngrok http 3000 > ngrok_backend.log 2>&1 & || print_error "Failed to start ngrok for backend."
-NGROK_BACKEND_PID=$!
+# Step 9: Set up SSH tunnel for the backend
+print_status "Setting up SSH tunnel for backend..."
+cd scripts
+./setup-ssh-tunnel.sh "backend" 3000 > ssh_tunnel_backend.log 2>&1 || print_error "Failed to set up SSH tunnel for backend."
 
-# Wait a bit for ngrok to start
-sleep 5
-
-# Step 10: Extract the backend's dynamic ngrok URL
-print_status "Fetching backend ngrok URL..."
-# Query ngrok's local API to get the public URL
-BACKEND_NGROK_URL=$(curl -s http://localhost:4040/api/tunnels | grep -o '"public_url":"https://[^"]*' | sed 's/"public_url":"//')
-if [ -z "$BACKEND_NGROK_URL" ]; then
-  print_error "Failed to fetch backend ngrok URL. Check ngrok_backend.log for errors."
+# Step 10: Extract the backend's SSH tunnel URL
+print_status "Fetching backend SSH tunnel URL..."
+BACKEND_SSH_URL=$(grep "Tunnel established" ssh_tunnel_backend.log | grep -o 'http://.*')
+if [ -z "$BACKEND_SSH_URL" ]; then
+  print_error "Failed to fetch backend SSH tunnel URL. Check ssh_tunnel_backend.log for errors."
 fi
 
-print_status "Backend ngrok URL: $BACKEND_NGROK_URL"
+print_status "Backend SSH tunnel URL: $BACKEND_SSH_URL"
 
 # Step 11: Install frontend dependencies (NuxtJS)
 print_status "Installing frontend dependencies..."
@@ -115,22 +111,22 @@ if [ ! -f "package.json" ]; then
 fi
 npm install || print_error "Failed to install frontend dependencies."
 
-# Step 12: Update the frontend's .env file with the backend's ngrok URL
-print_status "Updating frontend .env file with API_URL=$BACKEND_NGROK_URL..."
+# Step 12: Update the frontend's .env file with the backend's SSH tunnel URL
+print_status "Updating frontend .env file with API_URL=$BACKEND_SSH_URL..."
 if [ -f ".env" ]; then
   # Check if API_URL already exists in .env and update it
   if grep -q "^API_URL=" .env; then
     # macOS sed requires a backup file extension (e.g., .bak), even if we don't need the backup
-    sed -i '' "s|^API_URL=.*|API_URL=$BACKEND_NGROK_URL|" .env || print_error "Failed to update API_URL in .env."
+    sed -i '' "s|^API_URL=.*|API_URL=$BACKEND_SSH_URL|" .env || print_error "Failed to update API_URL in .env."
   else
-    echo "API_URL=$BACKEND_NGROK_URL" >> .env || print_error "Failed to append API_URL to .env."
+    echo "API_URL=$BACKEND_SSH_URL" >> .env || print_error "Failed to append API_URL to .env."
   fi
 else
   # If .env doesn't exist, create it
-  echo "API_URL=$BACKEND_NGROK_URL" > .env || print_error "Failed to create .env file."
+  echo "API_URL=$BACKEND_SSH_URL" > .env || print_error "Failed to create .env file."
 fi
 
-# Step 13: Run the frontend via ngrok on port 3001
+# Step 13: Run the frontend on port 3001
 print_status "Starting the frontend with NuxtJS on port 3001..."
 export PORT=3001
 npm run dev & || print_error "Failed to start the frontend."
@@ -139,19 +135,26 @@ FRONTEND_PID=$!
 # Wait a bit for Nuxt to start
 sleep 5
 
-print_status "Exposing frontend via ngrok on dove-picked-internally.ngrok-free.app..."
-ngrok http --domain=dove-picked-internally.ngrok-free.app 3001 > ngrok_frontend.log 2>&1 & || print_error "Failed to start ngrok for frontend."
-NGROK_FRONTEND_PID=$!
+# Set up SSH tunnel for the frontend
+print_status "Setting up SSH tunnel for frontend..."
+cd ../backend/scripts
+./setup-ssh-tunnel.sh "frontend" 3001 > ssh_tunnel_frontend.log 2>&1 || print_error "Failed to set up SSH tunnel for frontend."
+
+# Extract the frontend's SSH tunnel URL
+FRONTEND_SSH_URL=$(grep "Tunnel established" ssh_tunnel_frontend.log | grep -o 'http://.*')
+if [ -z "$FRONTEND_SSH_URL" ]; then
+  print_error "Failed to fetch frontend SSH tunnel URL. Check ssh_tunnel_frontend.log for errors."
+fi
 
 # Step 14: Print final status
 print_status "Deployment complete!"
 print_status "Backend is running (PID: $BACKEND_PID) on port 3000"
-print_status "Backend is exposed at $BACKEND_NGROK_URL (ngrok PID: $NGROK_BACKEND_PID)"
+print_status "Backend is exposed at $BACKEND_SSH_URL"
 print_status "Frontend is running (PID: $FRONTEND_PID) on port 3001"
-print_status "Frontend is exposed at https://dove-picked-internally.ngrok-free.app (ngrok PID: $NGROK_FRONTEND_PID)"
+print_status "Frontend is exposed at $FRONTEND_SSH_URL"
 
 # Trap to clean up on script exit
-trap 'kill $BACKEND_PID $FRONTEND_PID $NGROK_BACKEND_PID $NGROK_FRONTEND_PID 2>/dev/null; print_status "Stopped all processes."' EXIT
+trap 'kill $BACKEND_PID $FRONTEND_PID 2>/dev/null; ./stop-ssh-tunnel.sh "backend"; ./stop-ssh-tunnel.sh "frontend"; print_status "Stopped all processes."' EXIT
 
 # Keep the script running to keep the processes alive
 wait
