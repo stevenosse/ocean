@@ -15,8 +15,6 @@ const execAsync = promisify(exec);
 
 @Injectable()
 export class DeploymentWorkerService {
-  // Using the dedicated logging service instead of local logger
-
   constructor(
     private prisma: PrismaService,
     private githubService: GithubService,
@@ -29,9 +27,7 @@ export class DeploymentWorkerService {
 
   async startDeployment(deployment: Deployment): Promise<void> {
     try {
-      // Update status to in progress and disable monitoring for previous deployments of this project
       await this.prisma.$transaction([
-        // Disable monitoring for all previous deployments of this project
         this.prisma.deployment.updateMany({
           where: {
             projectId: deployment.projectId,
@@ -40,14 +36,12 @@ export class DeploymentWorkerService {
           },
           data: { monitoringEnabled: false }
         }),
-        // Update current deployment status
         this.prisma.deployment.update({
           where: { id: deployment.id },
           data: { status: DeploymentStatus.in_progress }
         })
       ]);
 
-      // Retrieve the project with all fields, especially build commands
       const project = await this.prisma.project.findUnique({
         where: { id: deployment.projectId },
         select: {
@@ -66,7 +60,6 @@ export class DeploymentWorkerService {
         }
       });
 
-      // Log the project details for debugging
       this.logsService.debug(`Project details: ${JSON.stringify(project, null, 2)}`, 'Deployment');
       this.logsService.debug(`Build commands - Install: ${project.installCommand}, Build: ${project.buildCommand}, Start: ${project.startCommand}`, 'Deployment');
 
@@ -77,30 +70,23 @@ export class DeploymentWorkerService {
       const repoDir = path.join(process.cwd(), process.env.DEPLOYED_APPS_DIR, `project-${project.id}`);
       let logs = '';
 
-      // For all deployments, delete the existing repository first to ensure a clean state
       if (fs.existsSync(repoDir)) {
         logs = `Deleting existing repository for clean deployment...\n`;
         await this.updateDeploymentLogs(deployment.id, logs);
 
         try {
-          // Use rimraf-like approach with fs.rmSync for recursive directory removal
           fs.rmSync(repoDir, { recursive: true, force: true });
           logs += `Successfully deleted existing repository.\n`;
         } catch (error) {
           logs += `Warning: Failed to delete repository: ${error.message}\n`;
-          // Continue with deployment even if deletion fails
         }
         await this.updateDeploymentLogs(deployment.id, logs);
       }
 
-      // Create repo directory if it doesn't exist
       if (!fs.existsSync(repoDir)) {
         fs.mkdirSync(repoDir, { recursive: true });
-
-        // Clone the repository with authentication
         let repoUrl = project.repositoryUrl;
 
-        // If it's a GitHub repository, use GitHub App authentication
         if (repoUrl.includes('github.com')) {
           const { owner, repo } = this.githubService.extractOwnerAndRepo(repoUrl);
           const token = await this.githubService.getInstallationToken(owner, repo);
@@ -117,17 +103,14 @@ export class DeploymentWorkerService {
         logs += stdout + stderr;
         await this.updateDeploymentLogs(deployment.id, logs);
       } else {
-        // Pull latest changes
         logs += `Pulling latest changes from ${project.repositoryUrl}\n`;
         await this.updateDeploymentLogs(deployment.id, logs);
 
         let pullCommand = `cd ${repoDir} && git pull`;
 
-        // If it's a GitHub repository, use GitHub App authentication
         if (project.repositoryUrl.includes('github.com')) {
           const { owner, repo } = this.githubService.extractOwnerAndRepo(project.repositoryUrl);
           const token = await this.githubService.getInstallationToken(owner, repo);
-          // Set Git credentials for this operation only
           pullCommand = `cd ${repoDir} && git config --local credential.helper '!f() { echo "password=${token}"; echo "username=x-access-token"; }; f' && git pull`;
         }
         const { stdout, stderr } = await execAsync(pullCommand);
@@ -135,7 +118,6 @@ export class DeploymentWorkerService {
         await this.updateDeploymentLogs(deployment.id, logs);
       }
 
-      // Checkout specific branch if specified
       if (project.branch) {
         const currentDeployment = await this.prisma.deployment.findUnique({ where: { id: deployment.id } });
         let logs = currentDeployment?.logs || '';
@@ -148,7 +130,6 @@ export class DeploymentWorkerService {
         await this.updateDeploymentLogs(deployment.id, logs);
       }
 
-      // Get commit information
       const { stdout: commitInfo } = await execAsync(`cd ${repoDir} && git log -1 --pretty=format:"%H %s"`);
       const [commitHash, commitMessage] = commitInfo.split(' ', 2);
       await this.prisma.deployment.update({
@@ -159,27 +140,19 @@ export class DeploymentWorkerService {
         }
       });
 
-      // Get environment variables for the project
       const envVars = await this.environmentsService.getEnvironmentVariablesForDeployment(project.id);
-
-      // Create a working directory for the project (if using root folder)
       const workingDir = path.join(repoDir, project.rootFolder || '');
-
-      // Run custom deployment steps based on project configuration
       await this.runCustomDeploymentSteps(deployment.id, project, workingDir, envVars);
 
-      // Get the deployment details to include in the completion status
       const completedDeployment = await this.prisma.deployment.findUnique({
         where: { id: deployment.id },
         select: { containerPort: true }
       });
 
-      // Update status to completed with port information in the logs
       const successMessage = completedDeployment?.containerPort
         ? `Deployment completed successfully. Application is running on port ${completedDeployment.containerPort}.`
         : 'Deployment completed successfully.';
 
-      // Get current logs
       const currentDeployment = await this.prisma.deployment.findUnique({
         where: { id: deployment.id },
         select: { logs: true }
@@ -187,8 +160,6 @@ export class DeploymentWorkerService {
 
       const updatedLogs = `${currentDeployment?.logs || ''}\n\n${successMessage}`;
 
-      // Update the deployment
-      // Update deployment status and enable monitoring
       await this.prisma.deployment.update({
         where: { id: deployment.id },
         data: {
@@ -203,7 +174,6 @@ export class DeploymentWorkerService {
     } catch (error) {
       this.logsService.error(`Deployment failed: ${error.message}`, error, 'Deployment');
 
-      // Update status to failed
       const currentDeployment = await this.prisma.deployment.findUnique({ where: { id: deployment.id } });
       let logs = currentDeployment?.logs || '';
       logs += `\nError: ${error.message}`;

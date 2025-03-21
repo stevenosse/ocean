@@ -179,46 +179,33 @@ export class DockerService {
     }
 
     private async findAvailablePort(startPort: number, endPort: number): Promise<number> {
-        this.logsService.debug(`Finding available port between ${startPort} and ${endPort}`, 'Port Allocation');
-
         for (let port = startPort; port <= endPort; port++) {
             try {
                 const { stdout } = await execAsync(`lsof -i:${port} || echo 'PORT_FREE'`, { timeout: 5000 });
 
                 if (stdout.includes('PORT_FREE')) {
-                    this.logsService.logPortAllocation(`Found available port: ${port}`);
                     return port;
-                } else {
-                    this.logsService.debug(`Port ${port} is in use according to lsof`, 'Port Allocation');
                 }
             } catch (error) {
-                this.logsService.debug(`Port ${port} appears to be available (lsof command failed)`, 'Port Allocation');
                 return port;
             }
         }
 
         const extendedEndPort = endPort + 1000;
-        this.logsService.warn(
-            `No available ports found between ${startPort} and ${endPort}, trying extended range up to ${extendedEndPort}`,
-            'Port Allocation'
-        );
 
         for (let port = endPort + 1; port <= extendedEndPort; port++) {
             try {
                 const { stdout } = await execAsync(`lsof -i:${port} || echo 'PORT_FREE'`, { timeout: 5000 });
 
                 if (stdout.includes('PORT_FREE')) {
-                    this.logsService.logPortAllocation(`Found available port in extended range: ${port}`);
                     return port;
                 }
             } catch (error) {
-                this.logsService.debug(`Port ${port} in extended range appears to be available`, 'Port Allocation');
                 return port;
             }
         }
 
         const randomPort = Math.floor(Math.random() * 10000) + 10000;
-        this.logsService.warn(`No available ports found in extended range, using random port: ${randomPort}`, 'Port Allocation');
         return randomPort;
     }
 
@@ -227,11 +214,6 @@ export class DockerService {
         const installCommand = project.installCommand || 'npm install';
         const buildCommand = project.buildCommand || '';
         const startCommand = project.startCommand || 'npm start';
-
-        this.logsService.debug(
-            `Project commands - Install: ${installCommand}, Build: ${buildCommand}, Start: ${startCommand}`,
-            'Docker Container'
-        );
 
         let dockerfile = `FROM node:${nodeVersion}-alpine
 
@@ -390,7 +372,7 @@ CMD ${startCommand}`;
             }
             await updateLogs(logs);
         } catch (error) {
-            this.logsService.error(`Docker deployment failed: ${error.message}`, error, 'Docker Container');
+            this.logger.error(`Docker deployment failed: ${error.message}`, error, 'Docker Container');
             logs += `\nError: ${error.message}\n`;
             await updateLogs(logs);
             await updateDeployment({

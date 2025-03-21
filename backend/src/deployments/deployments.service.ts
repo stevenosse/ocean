@@ -23,7 +23,6 @@ export class DeploymentsService {
   ) {}
 
   async create(createDeploymentDto: CreateDeploymentDto): Promise<Deployment> {
-    // Verify project exists
     await this.projectsService.findOne(createDeploymentDto.projectId);
     
     const deployment = await this.prisma.deployment.create({
@@ -36,7 +35,6 @@ export class DeploymentsService {
       include: { project: true },
     });
 
-    // Start the deployment process asynchronously in a separate process
     this.deploymentWorkerService.startDeployment(deployment);
     
     return deployment;
@@ -72,7 +70,6 @@ export class DeploymentsService {
 
   private async startDeployment(deployment: Deployment): Promise<void> {
     try {
-      // Update status to in progress
       await this.prisma.deployment.update({
         where: { id: deployment.id },
         data: { status: DeploymentStatus.in_progress }
@@ -81,14 +78,11 @@ export class DeploymentsService {
       const project = await this.projectsService.findOne(deployment.projectId);
       const repoDir = path.join(process.cwd(), process.env.DEPLOYED_APPS_DIR, `project-${project.id}`);
       
-      // Create repo directory if it doesn't exist
       if (!fs.existsSync(repoDir)) {
         fs.mkdirSync(repoDir, { recursive: true });
         
-        // Clone the repository with authentication
         let repoUrl = project.repositoryUrl;
         
-        // If it's a GitHub repository, use GitHub App authentication
         if (repoUrl.includes('github.com')) {
           const { owner, repo } = this.githubService.extractOwnerAndRepo(repoUrl);
           const token = await this.githubService.getInstallationToken(owner, repo);
@@ -111,7 +105,6 @@ export class DeploymentsService {
           data: { logs }
         });
       } else {
-        // Pull latest changes
         let logs = `Pulling latest changes from ${project.repositoryUrl}\n`;
         await this.prisma.deployment.update({
           where: { id: deployment.id },
@@ -120,11 +113,9 @@ export class DeploymentsService {
         
         let pullCommand = `cd ${repoDir} && git pull`;
         
-        // If it's a GitHub repository, use GitHub App authentication
         if (project.repositoryUrl.includes('github.com')) {
           const { owner, repo } = this.githubService.extractOwnerAndRepo(project.repositoryUrl);
           const token = await this.githubService.getInstallationToken(owner, repo);
-          // Set Git credentials for this operation only
           pullCommand = `cd ${repoDir} && git config --local credential.helper '!f() { echo "password=${token}"; echo "username=x-access-token"; }; f' && git pull`;
         }
         const { stdout, stderr } = await execAsync(pullCommand);
@@ -135,7 +126,6 @@ export class DeploymentsService {
         });
       }
 
-      // Checkout specific branch if specified
       if (project.branch) {
         const currentDeployment = await this.prisma.deployment.findUnique({ where: { id: deployment.id } });
         let logs = currentDeployment?.logs || '';
@@ -154,7 +144,6 @@ export class DeploymentsService {
         });
       }
 
-      // Get commit information
       const { stdout: commitInfo } = await execAsync(`cd ${repoDir} && git log -1 --pretty=format:"%H %s"`);
       const [commitHash, commitMessage] = commitInfo.split(' ', 2);
       await this.prisma.deployment.update({
@@ -165,7 +154,6 @@ export class DeploymentsService {
         }
       });
 
-      // Deploy using Docker Compose
       if (project.dockerComposeFile) {
         const composeFile = project.dockerComposeFile || 'docker-compose.yml';
         const serviceName = project.dockerServiceName || '';
@@ -187,7 +175,6 @@ export class DeploymentsService {
         });
       }
 
-      // Update status to completed
       await this.prisma.deployment.update({
         where: { id: deployment.id },
         data: {
@@ -196,7 +183,6 @@ export class DeploymentsService {
         }
       });
     } catch (error) {
-      // Update status to failed
       const currentDeployment = await this.prisma.deployment.findUnique({ where: { id: deployment.id } });
       let logs = currentDeployment?.logs || '';
       logs += `\nError: ${error.message}`;
