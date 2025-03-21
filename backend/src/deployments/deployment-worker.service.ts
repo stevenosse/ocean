@@ -22,7 +22,6 @@ export class DeploymentWorkerService {
     private environmentsService: EnvironmentsService,
     private logsService: DeploymentLogsService,
     private dockerService: DockerService,
-    private containerMonitorService: ContainerMonitorService,
   ) { }
 
   async startDeployment(deployment: Deployment): Promise<void> {
