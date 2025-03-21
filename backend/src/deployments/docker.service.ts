@@ -384,7 +384,7 @@ CMD ${startCommand}`;
             });
 
             if (tunnelUrl) {
-                logs += `\nDeployment completed successfully. Application URL: ${tunnelUrl}\n`;
+                logs += `\nDeployment completed successfully. Application URL: ${tunnelUrl}`;
             } else {
                 logs += `\nDeployment completed, but SSH tunnel setup failed. Application is running locally on port ${port}.\n`;
             }

@@ -27,8 +27,6 @@ export class SshTunnelingService {
     try {
       await this.stopTunnel(projectId);
 
-      const remotePort = this.calculateRemotePort(projectId);
-
       const project = await this.prisma.project.findUnique({
         where: { id: projectId },
         select: { name: true },
@@ -39,7 +37,7 @@ export class SshTunnelingService {
       }
 
       const sshScriptPath = path.join(process.cwd(), 'scripts/setup-ssh-tunnel.sh');
-      const sshCommand = `${sshScriptPath} ${projectId} ${port} ${remotePort} ${this.remoteHost}`;
+      const sshCommand = `${sshScriptPath} ${projectId} ${port}`;
 
       // Add a timeout of 30 seconds for the script execution
       const { stdout: sshOutput, stderr } = await execAsync(sshCommand, { timeout: 30000 });
