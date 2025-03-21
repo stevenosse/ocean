@@ -82,7 +82,7 @@ export class ProjectsController {
 
   @Get(':id/logs')
   @Header('Cache-Control', 'no-store, no-cache, must-revalidate, private')
-  async getLogs(@Param('id') id: string) {
+  async getLogs(@Param('id') id: string): Promise<string[]> {
     try {
       return await this.projectsService.getLogs(+id);
     } catch (error) {
