@@ -16,7 +16,11 @@ TUNNEL_NAME="ocean-project-${PROJECT_ID}"
 
 if [ -z "$REMOTE_PORT" ]; then
   BASE_PORT=$(grep SSH_TUNNEL_BASE_PORT backend/.env | cut -d '=' -f2)
-  PORT_OFFSET=$(echo -n "$PROJECT_ID" | md5sum | cut -c 1-4 | xargs -I {} printf "%d" 0x{} | awk '{print $1 % 1000}')
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    PORT_OFFSET=$(echo -n "$PROJECT_ID" | md5 | cut -c 1-4 | xargs -I {} printf "%d" 0x{} | awk '{print $1 % 1000}')
+  else
+    PORT_OFFSET=$(echo -n "$PROJECT_ID" | md5sum | cut -c 1-4 | xargs -I {} printf "%d" 0x{} | awk '{print $1 % 1000}')
+  fi
   REMOTE_PORT=$((BASE_PORT + PORT_OFFSET))
 fi
 
@@ -42,7 +46,7 @@ if [ -z "$PID" ]; then
   exit 1
 fi
 
-# No need to update nginx configuration when using direct IP:port
+ssh tunneluser@${REMOTE_HOST} "sudo sed -i '/^${SUBDOMAIN_NAME} /d' /etc/nginx/project-ports.conf && echo '$SUBDOMAIN_NAME $REMOTE_PORT;' | sudo tee -a /etc/nginx/project-ports.conf && sudo nginx -s reload"
 
 PUBLIC_URL="http://${REMOTE_HOST}:${REMOTE_PORT}"
 

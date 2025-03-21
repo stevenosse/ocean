@@ -5,7 +5,7 @@ export default defineNuxtConfig({
   // App configuration
   app: {
     head: {
-      title: 'Ocean - Deployment Automation',
+      title: 'Ocean - Turn your computer to a server',
       htmlAttrs: {
         lang: 'en'
       },
@@ -47,8 +47,8 @@ export default defineNuxtConfig({
 
   // Server configuration to use a different port
   server: {
-    port: 3001, // Use port 3001 instead of default 3000
-    host: '0.0.0.0' // Allow connections from all network interfaces
+    port: 3001,
+    host: '0.0.0.0'
   },
 
   compatibilityDate: '2025-03-18'
