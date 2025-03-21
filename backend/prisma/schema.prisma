@@ -10,6 +10,23 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  ADMIN
+  USER
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  role         Role      @default(USER)
+  projects     Project[]
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
 enum DeploymentStatus {
   pending
   in_progress
@@ -35,6 +52,8 @@ model Project {
   applicationUrl       String?           @map("application_url")
   createdAt            DateTime          @default(now()) @map("created_at")
   updatedAt            DateTime          @default(now()) @updatedAt @map("updated_at")
+  userId               Int?              @map("user_id")
+  user                 User?             @relation(fields: [userId], references: [id])
   deployments          Deployment[]
   environments         Environment[]
   managedDatabases     ManagedDatabase[]
