@@ -1,6 +1,6 @@
 # Deployment Guide
 
-This guide provides step-by-step instructions to deploy a project with a NestJS backend (using Prisma) and a frontend on macOS. The deployment script will:
+This guide provides step-by-step instructions to deploy Ocean backend (using Prisma) and a frontend on macOS. The deployment script will:
 
 - Install required tools (`git`, `Docker`) using Homebrew.
 - Set up SSH tunneling to expose your local services.
