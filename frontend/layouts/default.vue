@@ -9,17 +9,17 @@
               <NuxtLink to="/" class="text-blue-600 font-bold text-xl">Ocean</NuxtLink>
             </div>
             <div class="hidden sm:ml-6 sm:flex sm:space-x-8" v-if="isAuthenticated">
-              <NuxtLink to="/dashboard" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+              <NuxtLink to="/dashboard" :class="[isActive('/dashboard') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700', 'inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium']">
                 Dashboard
               </NuxtLink>
-              <NuxtLink to="/projects" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+              <NuxtLink to="/projects" :class="[isActive('/projects') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700', 'inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium']">
                 Projects
               </NuxtLink>
-              <NuxtLink to="/deployments" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+              <NuxtLink to="/deployments" :class="[isActive('/deployments') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700', 'inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium']">
                 Deployments
               </NuxtLink>
               <!-- Admin-only navigation -->
-              <NuxtLink v-if="user?.role === 'ADMIN'" to="/admin/users" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+              <NuxtLink v-if="user?.role === 'ADMIN'" to="/admin/users" :class="[isActive('/admin/users') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700', 'inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium']">
                 Users
               </NuxtLink>
             </div>
@@ -58,6 +58,14 @@
 
 <script setup>
 import { useAuth } from '~/composables/useAuth';
+import { useRoute } from 'vue-router';
 
+const route = useRoute();
 const { user, isAuthenticated, logout } = useAuth();
+
+const isActive = (path) => {
+  // Check if the current route path starts with the given path
+  // For example, /projects/123 should highlight the /projects link
+  return route.path === path || (path !== '/' && route.path.startsWith(path));
+};
 </script>
