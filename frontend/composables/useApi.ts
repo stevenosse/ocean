@@ -5,9 +5,9 @@ export const useApi = () => {
   const config = useRuntimeConfig()
   const baseURL = config.public.apiURL
   
-  // Helper function to get auth headers
+  // Helper function to get auth headers using Nuxt's useCookie
   const getAuthHeaders = () => {
-    const token = localStorage.getItem('token')
+    const token = useCookie('token').value
     return token ? { Authorization: `Bearer ${token}` } : {}
   }
 

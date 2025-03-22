@@ -6,7 +6,7 @@
         <div class="flex justify-between h-16">
           <div class="flex">
             <div class="flex-shrink-0 flex items-center">
-              <NuxtLink to="/" class="text-blue-600 font-bold text-xl">Ocean</NuxtLink>
+              <NuxtLink :to="isAuthenticated ? '/dashboard' : '/'" class="text-blue-600 font-bold text-xl">Ocean</NuxtLink>
             </div>
             <div class="hidden sm:ml-6 sm:flex sm:space-x-8" v-if="isAuthenticated">
               <NuxtLink to="/dashboard" :class="[isActive('/dashboard') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700', 'inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium']">

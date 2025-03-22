@@ -1,4 +1,4 @@
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { AuthResponse, User } from '~/types/user'
 
 export const useAuth = () => {
@@ -7,20 +7,21 @@ export const useAuth = () => {
   const user = ref<User | null>(null)
   const isAuthenticated = computed(() => !!user.value)
 
-  // Load user from localStorage on client side
-  onMounted(() => {
-    if (process.client) {
-      const storedUser = localStorage.getItem('user')
-      if (storedUser) {
-        try {
-          user.value = JSON.parse(storedUser)
-        } catch (e) {
-          console.error('Failed to parse stored user:', e)
-          localStorage.removeItem('user')
-        }
-      }
+  // Use Nuxt's useCookie to manage user data
+  const tokenCookie = useCookie('token', { secure: true, sameSite: 'strict' })
+  const userCookie = useCookie('user', { secure: true, sameSite: 'strict' })
+  
+  // Initialize user from cookie if available
+  if (userCookie.value) {
+    try {
+      user.value = typeof userCookie.value === 'string' 
+        ? JSON.parse(userCookie.value) 
+        : userCookie.value
+    } catch (e) {
+      console.error('Failed to parse stored user:', e)
+      userCookie.value = null
     }
-  })
+  }
 
   const login = async (email: string, password: string) => {
     error.value = ''
@@ -35,9 +36,9 @@ export const useAuth = () => {
         body: { email, password }
       })
       
-      // Store token and user in localStorage
-      localStorage.setItem('token', response.access_token)
-      localStorage.setItem('user', JSON.stringify(response.user))
+      // Store token and user in cookies using Nuxt's useCookie
+      tokenCookie.value = response.access_token
+      userCookie.value = response.user
       
       // Update user state
       user.value = response.user
@@ -65,9 +66,9 @@ export const useAuth = () => {
         body: { email, password }
       })
       
-      // Store token and user in localStorage
-      localStorage.setItem('token', response.access_token)
-      localStorage.setItem('user', JSON.stringify(response.user))
+      // Store token and user in cookies using Nuxt's useCookie
+      tokenCookie.value = response.access_token
+      userCookie.value = response.user
       
       // Update user state
       user.value = response.user
@@ -83,9 +84,9 @@ export const useAuth = () => {
   }
 
   const logout = () => {
-    // Clear localStorage
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
+    // Clear cookies using Nuxt's useCookie
+    tokenCookie.value = null
+    userCookie.value = null
     
     // Reset user state
     user.value = null
