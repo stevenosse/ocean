@@ -25,16 +25,18 @@ export class UsersService {
         email: createUserDto.email,
         passwordHash: createUserDto.passwordHash,
         role: Role.USER,
+        forcePasswordChange: true,
       },
     });
   }
 
-  async createAdmin(createUserDto: CreateUserDto) {
+  async createAdmin(createUserDto: CreateUserDto, forcePasswordChange: boolean = true) {
     return this.prisma.user.create({
       data: {
         email: createUserDto.email,
         passwordHash: createUserDto.passwordHash,
         role: Role.ADMIN,
+        forcePasswordChange: forcePasswordChange,
       },
     });
   }
@@ -45,5 +47,15 @@ export class UsersService {
 
   async findAll() {
     return this.prisma.user.findMany();
+  }
+
+  async updatePassword(userId: number, newPasswordHash: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        passwordHash: newPasswordHash,
+        forcePasswordChange: false,
+      },
+    });
   }
 }

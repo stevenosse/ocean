@@ -4,6 +4,7 @@ export interface User {
   role?: string;
   createdAt?: string;
   updatedAt?: string;
+  forcePasswordChange?: boolean;
 }
 
 export interface AuthResponse {
