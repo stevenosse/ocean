@@ -191,21 +191,82 @@ export const useApi = () => {
     }
   }
 
+  // User management methods
+  const fetchUsers = async () => {
+    try {
+      return await $fetch(`${baseURL}/users`, {
+        headers: getAuthHeaders()
+      })
+    } catch (error) {
+      console.error('Error fetching users:', error)
+      throw error
+    }
+  }
+
+  const createUser = async (userData: { email: string; password: string }) => {
+    try {
+      return await $fetch(`${baseURL}/users`, {
+        method: 'POST',
+        body: userData,
+        headers: getAuthHeaders()
+      })
+    } catch (error) {
+      console.error('Error creating user:', error)
+      throw error
+    }
+  }
+
+  const updateUserRole = async (userId: number, role: string) => {
+    try {
+      return await $fetch(`${baseURL}/users/${userId}`, {
+        method: 'PATCH',
+        body: { role },
+        headers: getAuthHeaders()
+      })
+    } catch (error) {
+      console.error(`Error updating user ${userId}:`, error)
+      throw error
+    }
+  }
+
+  const deleteUser = async (userId: number) => {
+    try {
+      await $fetch(`${baseURL}/users/${userId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      })
+      return true
+    } catch (error) {
+      console.error(`Error deleting user ${userId}:`, error)
+      throw error
+    }
+  }
+
   return {
     fetchProjects,
     fetchProject,
     createProject,
     updateProject,
     deleteProject,
+    
+    // Deployment methods
     fetchDeployments,
     fetchDeployment,
     fetchProjectDeployments,
     fetchProjectLogs,
     triggerDeploy,
+    
+    // Environment methods
     fetchEnvironments,
     fetchEnvironment,
     createEnvironment,
     updateEnvironment,
-    deleteEnvironment
+    deleteEnvironment,
+
+    // User management methods
+    fetchUsers,
+    createUser,
+    updateUserRole,
+    deleteUser
   }
 }

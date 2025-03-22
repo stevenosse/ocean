@@ -82,7 +82,6 @@ async function login() {
   const success = await authLogin(email.value, password.value);
   
   if (success) {
-    // Redirect to dashboard
     router.push('/projects');
   }
 }

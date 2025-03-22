@@ -329,14 +329,12 @@ const validateField = (field: string) => {
 }
 
 const isValidUrl = (url: string) => {
-  // Simple URL validation - checks if it looks like a git URL
   return /^(https?:\/\/|git@)([\w.-]+)(\/|:)[\w.-]+\/[\w.-]+(\.[\w.-]+)?(\.git)?$/.test(url)
 }
 
 const validateAndSaveProject = async () => {
   if (!project.value) return
   
-  // Validate all fields
   const nameValid = validateField('name')
   const repoValid = validateField('repositoryUrl')
   
@@ -353,7 +351,6 @@ const validateAndSaveProject = async () => {
       const result = await api.updateProject(id, project.value)
       if (result) {
         toast.success('Project updated successfully', 'Your changes have been saved')
-        // Use the original ID to avoid potential issues
         router.push(`/projects/${id}`)
       } else {
         toast.error('Failed to update project', 'Please try again.')

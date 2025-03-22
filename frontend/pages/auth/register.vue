@@ -82,7 +82,6 @@ async function register() {
   const success = await authRegister(email.value, password.value);
   
   if (success) {
-    // Redirect to dashboard
     router.push('/projects');
   }
 }

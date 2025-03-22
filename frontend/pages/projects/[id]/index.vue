@@ -336,7 +336,6 @@ const loading = ref(true)
 const loadingDeployments = ref(true)
 const showSettingsMenu = ref(false)
 
-// Tabs setup
 const tabs = [
   { name: 'Overview' },
   { name: 'Configuration' },
@@ -345,7 +344,6 @@ const tabs = [
 ]
 const currentTab = ref('Overview')
 
-// Get tab from URL query parameter if available
 onMounted(() => {
   const tabParam = route.query.tab as string
   if (tabParam && tabs.some(tab => tab.name === tabParam)) {
@@ -386,7 +384,7 @@ const deleteProject = async () => {
     const result = await api.deleteProject(project.value.id)
     if (result) {
       toast.success('Project deleted successfully!')
-      // Redirect to projects list
+
       router.push('/projects')
     } else {
       toast.error('Failed to delete project', 'Please try again.')
@@ -406,7 +404,7 @@ const triggerDeploy = async () => {
     const result = await api.triggerDeploy(project.value.id)
     if (result) {
       toast.success('Deployment triggered successfully!')
-      // Refresh deployments list
+      
       loadingDeployments.value = true
       deployments.value = await api.fetchProjectDeployments(project.value.id)
       loadingDeployments.value = false

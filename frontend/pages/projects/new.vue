@@ -192,7 +192,6 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useApi } from '~/composables/useApi'
 import { useToast } from '~/composables/useToast'
-// useRuntimeConfig is automatically available in Nuxt 3 setup scripts
 import type { Project } from '~/types'
 
 const router = useRouter()
@@ -254,12 +253,10 @@ const validateField = (field: string) => {
 }
 
 const isValidUrl = (url: string) => {
-  // Simple URL validation - checks if it looks like a git URL
   return /^(https?:\/\/|git@)([\w.-]+)(\/|:)[\w.-]+\/[\w.-]+(\.[\w.-]+)?(\.git)?$/.test(url)
 }
 
 const validateAndSaveProject = async () => {
-  // Validate all fields
   const nameValid = validateField('name')
   const repoValid = validateField('repositoryUrl')
 

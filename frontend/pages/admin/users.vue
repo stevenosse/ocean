@@ -16,7 +16,6 @@ import { useRouter } from 'vue-router';
 const { user, isAuthenticated } = useAuth();
 const router = useRouter();
 
-// Redirect if not admin
 onMounted(() => {
   if (!isAuthenticated.value || user.value?.role !== 'ADMIN') {
     router.push('/dashboard');

@@ -82,7 +82,6 @@ const loading = ref(true)
 
 onMounted(async () => {
   try {
-    // Fetch only deployments for this project
     deployments.value = await api.fetchProjectDeployments(parseInt(projectId))
   } catch (error) {
     console.error('Error fetching project deployments:', error)
