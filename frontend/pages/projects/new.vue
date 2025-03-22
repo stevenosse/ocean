@@ -273,7 +273,15 @@ const validateAndSaveProject = async () => {
 
     if (result) {
       if (project.value.repositoryUrl?.includes('github.com')) {
-        window.open(`${baseURL}/github/install?projectId=${result.id}`, '_blank')
+        const width = 800
+        const height = 600
+        const left = (window.innerWidth - width) / 2
+        const top = (window.innerHeight - height) / 2
+        window.open(
+          `${baseURL}/github/install?projectId=${result.id}`,
+          'github_install',
+          `width=${width},height=${height},top=${top},left=${left},menubar=no,toolbar=no,location=no,status=no`
+        )
       }
       
       toast.success('Project created successfully', 'Your new project is ready')
