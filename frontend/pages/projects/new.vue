@@ -1,20 +1,21 @@
 <template>
-  <div>
-    <div class="flex items-center justify-between mb-8">
-      <h1 class="text-3xl font-bold text-gray-900">New Project</h1>
-      <NuxtLink to="/projects"
-        class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 shadow-sm">
-        <svg class="-ml-1 mr-2 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-          stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
-        </svg>
-        Back to Projects
-      </NuxtLink>
+  <div class="max-w-3xl w-full mx-auto space-y-8">
+    <div>
+      <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">New Project</h2>
+      <p class="mt-2 text-center text-sm text-gray-600">
+        <NuxtLink to="/projects" class="font-medium text-blue-600 hover:text-blue-500 inline-flex items-center">
+          <svg class="-ml-1 mr-2 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+            stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+          </svg>
+          Back to Projects
+        </NuxtLink>
+      </p>
     </div>
 
     <div class="bg-white shadow-md overflow-hidden sm:rounded-lg border border-gray-100">
       <div class="px-6 py-6 sm:p-8">
-        <form @submit.prevent="validateAndSaveProject" class="max-w-3xl mx-auto">
+        <form @submit.prevent="validateAndSaveProject" class="mt-8 space-y-6">
           <div class="space-y-8">
             <!-- Project Name Field -->
             <div class="relative">
@@ -22,8 +23,8 @@
                   class="text-red-500">*</span></label>
               <div class="relative">
                 <input type="text" id="name" v-model="project.name"
-                  :class="['block w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base',
-                    errors.name ? 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500']"
+                  :class="['appearance-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm',
+                    errors.name ? 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300']"
                   @blur="validateField('name')" placeholder="Enter project name" />
                 <div v-if="errors.name" class="mt-2 text-sm text-red-600">
                   {{ errors.name }}
@@ -37,8 +38,8 @@
                   class="text-red-500">*</span></label>
               <div class="relative">
                 <input type="text" id="repositoryUrl" v-model="project.repositoryUrl"
-                  :class="['block w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base',
-                    errors.repositoryUrl ? 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500']"
+                  :class="['appearance-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm',
+                    errors.repositoryUrl ? 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300']"
                   @blur="validateField('repositoryUrl')" placeholder="https://github.com/username/repo.git" />
                 <div v-if="errors.repositoryUrl" class="mt-2 text-sm text-red-600">
                   {{ errors.repositoryUrl }}
@@ -52,7 +53,7 @@
               <label for="branch" class="block text-sm font-medium text-gray-700 mb-1">Branch</label>
               <div class="relative">
                 <input type="text" id="branch" v-model="project.branch"
-                  class="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base"
+                  class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                   placeholder="main" />
               </div>
               <p class="mt-2 text-sm text-gray-500">The Git branch to deploy (defaults to main/master)</p>
@@ -63,7 +64,7 @@
               <label for="rootFolder" class="block text-sm font-medium text-gray-700 mb-1">Root Folder</label>
               <div class="relative">
                 <input type="text" id="rootFolder" v-model="project.rootFolder"
-                  class="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base"
+                  class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                   placeholder="/" />
               </div>
               <p class="mt-2 text-sm text-gray-500">The root folder path where the docker-compose file is located
@@ -79,7 +80,7 @@
                 <label for="installCommand" class="block text-sm font-medium text-gray-700 mb-1">Install Command</label>
                 <div class="relative">
                   <input type="text" id="installCommand" v-model="project.installCommand"
-                    class="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base"
+                    class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                     placeholder="npm install" />
                 </div>
                 <p class="mt-2 text-sm text-gray-500">Command to install dependencies (e.g., npm install, yarn)</p>
@@ -90,7 +91,7 @@
                 <label for="buildCommand" class="block text-sm font-medium text-gray-700 mb-1">Build Command</label>
                 <div class="relative">
                   <input type="text" id="buildCommand" v-model="project.buildCommand"
-                    class="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base"
+                    class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                     placeholder="npm run build" />
                 </div>
                 <p class="mt-2 text-sm text-gray-500">Command to build the project (e.g., npm run build)</p>
@@ -101,7 +102,7 @@
                 <label for="startCommand" class="block text-sm font-medium text-gray-700 mb-1">Start Command</label>
                 <div class="relative">
                   <input type="text" id="startCommand" v-model="project.startCommand"
-                    class="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base"
+                    class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                     placeholder="npm start" />
                 </div>
                 <p class="mt-2 text-sm text-gray-500">Command to start the project (e.g., npm start, node server.js)</p>
@@ -113,7 +114,7 @@
                   Directory</label>
                 <div class="relative">
                   <input type="text" id="outputDirectory" v-model="project.outputDirectory"
-                    class="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base"
+                    class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                     placeholder="dist" />
                 </div>
                 <p class="mt-2 text-sm text-gray-500">Directory where build output is located (e.g., dist, build)</p>
@@ -130,7 +131,7 @@
                   File</label>
                 <div class="relative">
                   <input type="text" id="dockerComposeFile" v-model="project.dockerComposeFile"
-                    class="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base"
+                    class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                     placeholder="docker-compose.yml" />
                 </div>
                 <p class="mt-2 text-sm text-gray-500">Path to docker-compose.yml (defaults to docker-compose.yml in the
@@ -143,7 +144,7 @@
                   Name</label>
                 <div class="relative">
                   <input type="text" id="dockerServiceName" v-model="project.dockerServiceName"
-                    class="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base"
+                    class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                     placeholder="app" />
                 </div>
                 <p class="mt-2 text-sm text-gray-500">The service name in docker-compose.yml to deploy</p>
@@ -155,7 +156,7 @@
               <label for="webhookSecret" class="block text-sm font-medium text-gray-700 mb-1">Webhook Secret</label>
               <div class="relative">
                 <input type="text" id="webhookSecret" v-model="project.webhookSecret"
-                  class="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base"
+                  class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                   placeholder="Enter webhook secret" />
               </div>
               <p class="mt-2 text-sm text-gray-500">Secret for webhook authentication (optional)</p>
@@ -164,11 +165,11 @@
             <!-- Form Actions -->
             <div class="flex justify-end pt-4">
               <button type="button" @click="$router.push('/projects')"
-                class="mr-4 inline-flex items-center px-5 py-3 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
+                class="mr-4 group relative flex justify-center py-2 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                 Cancel
               </button>
               <button type="submit"
-                class="inline-flex items-center px-5 py-3 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+                class="group relative flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 :disabled="isSubmitting">
                 <svg v-if="isSubmitting" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
                   xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
