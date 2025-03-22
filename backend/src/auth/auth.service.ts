@@ -46,9 +46,15 @@ export class AuthService {
       throw new UnauthorizedException('User already exists');
     }
 
-    // Create new user
+    // Check if there are any users in the database
+    const userCount = await this.usersService.countUsers();
+    if (userCount > 0) {
+      throw new UnauthorizedException('Registration is disabled. Please contact an administrator.');
+    }
+
+    // Create new user - first user is admin by default
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
-    const user = await this.usersService.create({
+    const user = await this.usersService.createAdmin({
       email: registerDto.email,
       passwordHash: hashedPassword,
     });

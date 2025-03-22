@@ -10,8 +10,7 @@ import { useAuth } from '~/composables/useAuth';
 onMounted(() => {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
-  
-  // Redirect to dashboard if authenticated, otherwise to login
+
   if (isAuthenticated.value) {
     router.push('/dashboard');
   } else {
