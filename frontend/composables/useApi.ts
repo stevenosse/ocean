@@ -4,10 +4,18 @@ import type { Project, Deployment, Environment } from '~/types'
 export const useApi = () => {
   const config = useRuntimeConfig()
   const baseURL = config.public.apiURL
+  
+  // Helper function to get auth headers
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token')
+    return token ? { Authorization: `Bearer ${token}` } : {}
+  }
 
   const fetchProjects = async (): Promise<Project[]> => {
     try {
-      return await $fetch<Project[]>(`${baseURL}/projects`)
+      return await $fetch<Project[]>(`${baseURL}/projects`, {
+        headers: getAuthHeaders()
+      })
     } catch (error) {
       console.error('Error fetching projects:', error)
       return []
@@ -16,7 +24,9 @@ export const useApi = () => {
 
   const fetchProject = async (id: number): Promise<Project | null> => {
     try {
-      return await $fetch<Project>(`${baseURL}/projects/${id}`)
+      return await $fetch<Project>(`${baseURL}/projects/${id}`, {
+        headers: getAuthHeaders()
+      })
     } catch (error) {
       console.error(`Error fetching project ${id}:`, error)
       return null
@@ -27,7 +37,8 @@ export const useApi = () => {
     try {
       return await $fetch<Project>(`${baseURL}/projects`, {
         method: 'POST',
-        body: project
+        body: project,
+        headers: getAuthHeaders()
       })
     } catch (error) {
       console.error('Error creating project:', error)
@@ -41,7 +52,8 @@ export const useApi = () => {
       
       return await $fetch<Project>(`${baseURL}/projects/${id}`, {
         method: 'PATCH',
-        body: cleanedProject
+        body: cleanedProject,
+        headers: getAuthHeaders()
       })
     } catch (error) {
       console.error(`Error updating project ${id}:`, error)
@@ -51,7 +63,9 @@ export const useApi = () => {
 
   const fetchDeployments = async (): Promise<Deployment[]> => {
     try {
-      return await $fetch<Deployment[]>(`${baseURL}/deployments`)
+      return await $fetch<Deployment[]>(`${baseURL}/deployments`, {
+        headers: getAuthHeaders()
+      })
     } catch (error) {
       console.error('Error fetching deployments:', error)
       return []
@@ -60,7 +74,9 @@ export const useApi = () => {
 
   const fetchDeployment = async (id: number): Promise<Deployment | null> => {
     try {
-      return await $fetch<Deployment>(`${baseURL}/deployments/${id}`)
+      return await $fetch<Deployment>(`${baseURL}/deployments/${id}`, {
+        headers: getAuthHeaders()
+      })
     } catch (error) {
       console.error(`Error fetching deployment ${id}:`, error)
       return null
@@ -69,7 +85,9 @@ export const useApi = () => {
 
   const fetchProjectDeployments = async (projectId: number): Promise<Deployment[]> => {
     try {
-      return await $fetch<Deployment[]>(`${baseURL}/deployments/project/${projectId}`)
+      return await $fetch<Deployment[]>(`${baseURL}/deployments/project/${projectId}`, {
+        headers: getAuthHeaders()
+      })
     } catch (error) {
       console.error(`Error fetching deployments for project ${projectId}:`, error)
       return []
@@ -79,7 +97,8 @@ export const useApi = () => {
   const triggerDeploy = async (projectId: number): Promise<Deployment | null> => {
     try {
       return await $fetch<Deployment>(`${baseURL}/projects/${projectId}/deploy`, {
-        method: 'POST'
+        method: 'POST',
+        headers: getAuthHeaders()
       })
     } catch (error) {
       console.error(`Error triggering deployment for project ${projectId}:`, error)
@@ -89,7 +108,9 @@ export const useApi = () => {
 
   const fetchEnvironments = async (projectId: number): Promise<Environment[]> => {
     try {
-      return await $fetch<Environment[]>(`${baseURL}/environments/project/${projectId}`)
+      return await $fetch<Environment[]>(`${baseURL}/environments/project/${projectId}`, {
+        headers: getAuthHeaders()
+      })
     } catch (error) {
       console.error(`Error fetching environments for project ${projectId}:`, error)
       return []
@@ -98,7 +119,9 @@ export const useApi = () => {
 
   const fetchEnvironment = async (id: number): Promise<Environment | null> => {
     try {
-      return await $fetch<Environment>(`${baseURL}/environments/${id}`)
+      return await $fetch<Environment>(`${baseURL}/environments/${id}`, {
+        headers: getAuthHeaders()
+      })
     } catch (error) {
       console.error(`Error fetching environment ${id}:`, error)
       return null
@@ -109,7 +132,8 @@ export const useApi = () => {
     try {
       return await $fetch<Environment>(`${baseURL}/environments`, {
         method: 'POST',
-        body: environment
+        body: environment,
+        headers: getAuthHeaders()
       })
     } catch (error) {
       console.error('Error creating environment:', error)
@@ -121,7 +145,8 @@ export const useApi = () => {
     try {
       return await $fetch<Environment>(`${baseURL}/environments/${id}`, {
         method: 'PATCH',
-        body: environment
+        body: environment,
+        headers: getAuthHeaders()
       })
     } catch (error) {
       console.error(`Error updating environment ${id}:`, error)
@@ -132,7 +157,8 @@ export const useApi = () => {
   const deleteEnvironment = async (id: number): Promise<boolean> => {
     try {
       await $fetch(`${baseURL}/environments/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getAuthHeaders()
       })
       return true
     } catch (error) {
@@ -143,7 +169,9 @@ export const useApi = () => {
   
   const fetchProjectLogs = async (projectId: number): Promise<string[]> => {
     try {
-      return await $fetch<string[]>(`${baseURL}/projects/${projectId}/logs`)
+      return await $fetch<string[]>(`${baseURL}/projects/${projectId}/logs`, {
+        headers: getAuthHeaders()
+      })
     } catch (error) {
       console.error(`Error fetching logs for project ${projectId}:`, error)
       return ['']
@@ -153,7 +181,8 @@ export const useApi = () => {
   const deleteProject = async (id: number): Promise<boolean> => {
     try {
       await $fetch(`${baseURL}/projects/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getAuthHeaders()
       })
       return true
     } catch (error) {

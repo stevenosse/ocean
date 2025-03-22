@@ -1,3 +1,7 @@
+import { User, AuthResponse } from './user'
+
+export { User, AuthResponse }
+
 export enum DeploymentStatus {
   PENDING = 'pending',
   IN_PROGRESS = 'in_progress',

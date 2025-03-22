@@ -1,8 +1,5 @@
 export default defineNuxtConfig({
-  // Disable SSR for SPA mode
   ssr: false,
-
-  // App configuration
   app: {
     head: {
       title: 'Ocean - Turn your computer to a server',
@@ -19,33 +16,23 @@ export default defineNuxtConfig({
       ]
     }
   },
-
-  // Global CSS: https://go.nuxtjs.dev/config-css
   css: [],
-
-  // Plugins to run before rendering page: https://go.nuxtjs.dev/config-plugins
-  plugins: [],
-
-  // Auto import components: https://go.nuxtjs.dev/config-components
+  plugins: [
+    '~/plugins/auth.ts'
+  ],
+  router: {
+    middleware: ['auth']
+  },
   components: true,
-
-  // Modules for dev and build (recommended): https://go.nuxtjs.dev/config-modules
   modules: [
-    // https://go.nuxtjs.dev/tailwindcss
     '@nuxtjs/tailwindcss',
   ],
-
-  // Runtime config for API URL
   runtimeConfig: {
     public: {
       apiURL: process.env.API_URL || 'http://localhost:3000'
     }
   },
-
-  // Build Configuration: https://go.nuxtjs.dev/config-build
   build: {},
-
-  // Server configuration to use a different port
   server: {
     port: 3001,
     host: '0.0.0.0'
