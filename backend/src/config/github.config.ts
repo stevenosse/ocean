@@ -1,6 +1,6 @@
 export interface GithubAppConfig {
   appId: string;
-  appSlug: string; // The GitHub App's slug name used in URLs
+  appSlug: string;
   privateKey: string;
   clientId: string;
   clientSecret: string;
@@ -9,7 +9,7 @@ export interface GithubAppConfig {
 
 export const githubConfig: GithubAppConfig = {
   appId: process.env.GITHUB_APP_ID || '',
-  appSlug: process.env.GITHUB_APP_SLUG || 'ocean-deploy', // Default slug if not specified
+  appSlug: process.env.GITHUB_APP_SLUG || 'ocean-deploy',
   privateKey: process.env.GITHUB_APP_PRIVATE_KEY || '',
   clientId: process.env.GITHUB_APP_CLIENT_ID || '',
   clientSecret: process.env.GITHUB_APP_CLIENT_SECRET || '',

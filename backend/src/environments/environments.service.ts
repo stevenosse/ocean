@@ -14,7 +14,6 @@ export class EnvironmentsService {
   ) {}
 
   async create(createEnvironmentDto: CreateEnvironmentDto): Promise<Environment> {
-    // Verify project exists
     await this.projectsService.findOne(createEnvironmentDto.projectId);
 
     try {
@@ -34,7 +33,6 @@ export class EnvironmentsService {
   }
 
   async findByProject(projectId: number): Promise<Environment[]> {
-    // Verify project exists
     await this.projectsService.findOne(projectId);
 
     return await this.prisma.environment.findMany({
@@ -55,7 +53,7 @@ export class EnvironmentsService {
   }
 
   async update(id: number, updateEnvironmentDto: UpdateEnvironmentDto): Promise<Environment> {
-    await this.findOne(id); // Check if environment exists
+    await this.findOne(id);
 
     try {
       return await this.prisma.environment.update({
@@ -71,7 +69,7 @@ export class EnvironmentsService {
   }
 
   async remove(id: number): Promise<void> {
-    await this.findOne(id); // Check if environment exists
+    await this.findOne(id);
     await this.prisma.environment.delete({
       where: { id },
     });

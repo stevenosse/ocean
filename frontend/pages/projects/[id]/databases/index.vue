@@ -215,19 +215,14 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
 import { useToast } from '~/composables/useToast';
 import { useDatabaseApi } from '~/composables/useDatabaseApi';
 import type { ManagedDatabase, DatabaseBackup, CreateDatabaseDto } from '~/types';
-
-import DatabaseList from '~/components/Database/DatabaseList.vue';
-import DatabaseBackups from '~/components/Database/DatabaseBackups.vue';
 import CreateDatabaseModal from '~/components/Database/CreateDatabaseModal.vue';
 import ConnectionDetailsModal from '~/components/Database/ConnectionDetailsModal.vue';
 import ConfirmationModal from '~/components/Database/ConfirmationModal.vue';
 
 const route = useRoute();
-const router = useRouter();
 const toast = useToast();
 const databaseApi = useDatabaseApi();
 
@@ -238,14 +233,12 @@ const backups = ref<Record<number, DatabaseBackup[]>>({});
 const backupsLoading = ref<Record<number, boolean>>({});
 const backupInProgress = ref(false);
 
-// Modal states
 const showCreateDatabaseModal = ref(false);
 const showConnectionModal = ref(false);
 const showDeleteDatabaseModal = ref(false);
 const showRestoreBackupModal = ref(false);
 const showDeleteBackupModal = ref(false);
 
-// Operation loading states
 const isCreatingDatabase = ref(false);
 const isDeletingDatabase = ref(false);
 const isRestoringBackup = ref(false);
@@ -300,11 +293,10 @@ const loadBackups = async (databaseId: number) => {
   }
 };
 
-// Handle database created event
 const databaseError = ref<string | undefined>(undefined);
 const handleDatabaseCreated = async (database: CreateDatabaseDto) => {
   isCreatingDatabase.value = true;
-  databaseError.value = undefined; // Clear previous errors
+  databaseError.value = undefined;
   try {
     const newDatabase = await databaseApi.createDatabase(database);
     if (newDatabase) {
@@ -315,7 +307,6 @@ const handleDatabaseCreated = async (database: CreateDatabaseDto) => {
       const errorMessage = 'Failed to create database.';
       toast.error(errorMessage);
       databaseError.value = errorMessage;
-      // Don't close modal on error
     }
   } catch (error: any) {
     console.error('Error creating database:', error);
@@ -351,7 +342,6 @@ const createBackup = async (databaseId: number) => {
   }
 };
 
-// Show connection details
 const showConnectionDetails = async (database: ManagedDatabase) => {
   selectedDatabase.value = database;
   showConnectionModal.value = true;
@@ -359,7 +349,6 @@ const showConnectionDetails = async (database: ManagedDatabase) => {
   copied.value = false;
   isLoadingConnectionString.value = true;
 
-  // Set a default connection string while loading
   connectionString.value = `postgresql://${database.username}:********@${database.host}:${database.port}/${database.name}`;
 
   try {
@@ -377,7 +366,6 @@ const showConnectionDetails = async (database: ManagedDatabase) => {
   }
 };
 
-// Copy connection string to clipboard
 const copyConnectionString = () => {
   if (!connectionString.value) {
     toast.error('No connection string available to copy');
@@ -398,13 +386,11 @@ const copyConnectionString = () => {
     });
 };
 
-// Confirm delete database
 const confirmDeleteDatabase = (database: ManagedDatabase) => {
   selectedDatabase.value = database;
   showDeleteDatabaseModal.value = true;
 };
 
-// Delete database
 const deleteDatabase = async (databaseId: number) => {
   isDeletingDatabase.value = true;
   try {
@@ -427,14 +413,12 @@ const deleteDatabase = async (databaseId: number) => {
   }
 };
 
-// Confirm restore backup
 const confirmRestoreBackup = (backup: DatabaseBackup, database: ManagedDatabase) => {
   selectedBackup.value = backup;
   selectedDatabase.value = database;
   showRestoreBackupModal.value = true;
 };
 
-// Restore backup
 const restoreBackup = async (backupId: number) => {
   isRestoringBackup.value = true;
   try {
@@ -442,7 +426,6 @@ const restoreBackup = async (backupId: number) => {
     if (success) {
       showRestoreBackupModal.value = false;
       toast.success('Backup restored successfully');
-      // Refresh databases to show updated state
       await loadDatabases();
     } else {
       toast.error('Failed to restore backup: Server returned unsuccessful status');
@@ -457,13 +440,11 @@ const restoreBackup = async (backupId: number) => {
   }
 };
 
-// Confirm delete backup
 const confirmDeleteBackup = (backup: DatabaseBackup) => {
   selectedBackup.value = backup;
   showDeleteBackupModal.value = true;
 };
 
-// Delete backup
 const deleteBackup = async (backup: DatabaseBackup | null) => {
   try {
     if (!backup) {
@@ -475,7 +456,6 @@ const deleteBackup = async (backup: DatabaseBackup | null) => {
     isDeletingBackup.value = true;
     const success = await databaseApi.deleteBackup(backup.id);
     if (success) {
-      // Remove the backup from the list
       if (backups.value[backup.databaseId]) {
         backups.value[backup.databaseId] = backups.value[backup.databaseId].filter(b => b.id !== backup.id);
       }
@@ -495,24 +475,11 @@ const deleteBackup = async (backup: DatabaseBackup | null) => {
   }
 };
 
-// Format date
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
   return date.toLocaleString();
 };
 
-// Format file size
-const formatSize = (bytes: number) => {
-  if (bytes === 0) return '0 Bytes';
-
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-};
-
-// Initialize on mount
 onMounted(() => {
   loadDatabases();
 });

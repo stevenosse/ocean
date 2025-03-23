@@ -10,22 +10,19 @@ export interface Toast {
   timeout?: number
 }
 
-// Create a reactive state that persists across component instances
 const toasts = ref<Toast[]>([])
 let toastCounter = 0
 
 export const useToast = () => {
   const addToast = (toast: Omit<Toast, 'id'>) => {
     const id = ++toastCounter
-    const timeout = toast.timeout ?? 5000 // Default timeout of 5 seconds
+    const timeout = toast.timeout ?? 5000
     
-    // Add the toast to the array
     toasts.value.push({
       id,
       ...toast
     })
     
-    // Automatically remove the toast after the timeout
     if (timeout > 0) {
       setTimeout(() => {
         removeToast(id)
@@ -46,7 +43,6 @@ export const useToast = () => {
     toasts.value = []
   }
   
-  // Helper methods for different toast types
   const success = (title: string, message?: string, timeout?: number) => {
     return addToast({ type: 'success', title, message, timeout })
   }

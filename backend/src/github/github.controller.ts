@@ -23,7 +23,6 @@ export class GithubController {
     
     const { owner, repo } = this.githubService.extractOwnerAndRepo(project.repositoryUrl);
     
-    // Get installation URL from GitHub service and append state parameter with project ID
     const baseUrl = this.githubService.getInstallationUrl();
     const installationUrl = `${baseUrl}?state=${projectId}`;
     
@@ -40,13 +39,10 @@ export class GithubController {
       throw new Error('Missing required parameters');
     }
 
-    // The state parameter contains the project ID
     const projectId = state;
 
-    // Update project with installation ID
     await this.projectsService.update(+projectId, { githubInstallationId: +installationId });
 
-    // Redirect back to project page in the frontend
     return { url: `/projects/${projectId}`, statusCode: 302 };
   }
 }

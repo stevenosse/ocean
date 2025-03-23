@@ -1,6 +1,5 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-    <!-- Navigation -->
     <nav class="bg-white shadow-sm">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
@@ -18,14 +17,12 @@
               <NuxtLink to="/deployments" :class="[isActive('/deployments') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700', 'inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium']">
                 Deployments
               </NuxtLink>
-              <!-- Admin-only navigation -->
               <NuxtLink v-if="user?.role === 'ADMIN'" to="/admin/users" :class="[isActive('/admin/users') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700', 'inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium']">
                 Users
               </NuxtLink>
             </div>
           </div>
           <div class="hidden sm:ml-6 sm:flex sm:items-center">
-            <!-- Profile dropdown -->
             <div class="ml-3 relative" v-if="isAuthenticated">
               <div class="flex items-center space-x-4">
                 <span class="text-sm text-gray-700">{{ user?.email }}</span>
@@ -47,7 +44,6 @@
       </div>
     </nav>
 
-    <!-- Page Content -->
     <main class="py-10">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <slot />
@@ -64,8 +60,6 @@ const route = useRoute();
 const { user, isAuthenticated, logout } = useAuth();
 
 const isActive = (path) => {
-  // Check if the current route path starts with the given path
-  // For example, /projects/123 should highlight the /projects link
   return route.path === path || (path !== '/' && route.path.startsWith(path));
 };
 </script>

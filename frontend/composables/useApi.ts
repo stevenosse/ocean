@@ -190,7 +190,6 @@ export const useApi = () => {
     }
   }
 
-  // User management methods
   const fetchUsers = async () => {
     try {
       return await $fetch(`${baseURL}/users`, {
@@ -228,6 +227,19 @@ export const useApi = () => {
     }
   }
 
+  const updateUser = async (user: User) => {
+    try {
+      return await $fetch(`${baseURL}/users/${user.id}`, {
+        method: 'PATCH',
+        body: user,
+        headers: getAuthHeaders()
+      })
+    } catch (error) {
+      console.error(`Error updating user ${user.id}:`, error)
+      throw error
+    }
+  }
+
   const deleteUser = async (userId: number) => {
     try {
       await $fetch(`${baseURL}/users/${userId}`, {
@@ -248,24 +260,22 @@ export const useApi = () => {
     updateProject,
     deleteProject,
 
-    // Deployment methods
     fetchDeployments,
     fetchDeployment,
     fetchProjectDeployments,
     fetchProjectLogs,
     triggerDeploy,
 
-    // Environment methods
     fetchEnvironments,
     fetchEnvironment,
     createEnvironment,
     updateEnvironment,
     deleteEnvironment,
 
-    // User management methods
     fetchUsers,
     createUser,
     updateUserRole,
+    updateUser,
     deleteUser
   }
 }

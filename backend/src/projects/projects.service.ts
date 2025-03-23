@@ -39,7 +39,7 @@ export class ProjectsService {
   }
 
   async update(id: number, updateProjectDto: UpdateProjectDto): Promise<Project> {
-    await this.findOne(id); // Check if project exists
+    await this.findOne(id);
     return await this.prisma.project.update({
       where: { id },
       data: updateProjectDto,
@@ -75,17 +75,13 @@ export class ProjectsService {
         console.warn(`Failed to delete project files for project ${id}: ${error.message}`);
       }
 
-      // Delete all deployments for this project
       await prisma.deployment.deleteMany({
         where: { projectId: id }
       });
 
-      // Get all managed databases for this project
       const databases = await prisma.managedDatabase.findMany({
         where: { projectId: id }
       });
-
-      // Delete each database
       for (const db of databases) {
         try {
           await execAsync(`dropdb ${db.name} || true`);
@@ -95,12 +91,9 @@ export class ProjectsService {
         }
       }
 
-      // Delete managed database records
       await prisma.managedDatabase.deleteMany({
         where: { projectId: id }
       });
-
-      // Finally delete the project itself
       await prisma.project.delete({
         where: { id }
       });

@@ -133,13 +133,11 @@ const form = ref({
 const { changePassword, error, isLoading } = useAuth();
 
 const handleSubmit = async () => {
-  // Validate passwords match
   if (form.value.newPassword !== form.value.confirmPassword) {
     error.value = 'New passwords do not match';
     return;
   }
   
-  // Validate password complexity
   const passwordRegex = /(?=.*\d)(?=.*[a-z])(?=.*[A-Z])/;
   if (!passwordRegex.test(form.value.newPassword) || form.value.newPassword.length < 8) {
     error.value = 'Password must be at least 8 characters and include uppercase, lowercase, and numbers';
@@ -149,17 +147,14 @@ const handleSubmit = async () => {
   const success = await changePassword(form.value.currentPassword, form.value.newPassword);
   
   if (success) {
-    // Reset form
     form.value = {
       currentPassword: '',
       newPassword: '',
       confirmPassword: ''
     };
     
-    // Emit success event
     emit('password-changed');
     
-    // Close modal if not forced
     if (!props.isForced) {
       close();
     }

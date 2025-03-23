@@ -11,13 +11,11 @@ export class WebhooksService {
   ) {}
 
   async verifyWebhookSignature(payload: any, signature: string): Promise<boolean> {
-    // If no signature is provided, skip verification
     if (!signature) {
       return true;
     }
 
     try {
-      // Find the project based on the repository URL
       const repoUrl = payload.repository?.html_url || payload.repository?.url;
       if (!repoUrl) {
         return false;
@@ -26,12 +24,10 @@ export class WebhooksService {
       const projects = await this.projectsService.findAll();
       const project = projects.find(p => p.repositoryUrl === repoUrl);
 
-      // If project not found or no webhook secret, skip verification
       if (!project || !project.webhookSecret) {
         return true;
       }
 
-      // Verify signature
       const hmac = crypto.createHmac('sha256', project.webhookSecret);
       const digest = 'sha256=' + hmac.update(JSON.stringify(payload)).digest('hex');
       return crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(signature));
@@ -43,7 +39,6 @@ export class WebhooksService {
 
   async processGithubWebhook(payload: any): Promise<any> {
     try {
-      // Extract repository information
       const repoUrl = payload.repository?.html_url || payload.repository?.url;
       const branch = payload.ref ? payload.ref.replace('refs/heads/', '') : null;
       
@@ -51,16 +46,10 @@ export class WebhooksService {
         throw new Error('Repository URL not found in webhook payload');
       }
 
-      // Find matching projects
       const projects = await this.projectsService.findAll();
       const matchingProjects = projects.filter(project => {
-        // Match by repository URL
         const repoMatch = project.repositoryUrl === repoUrl;
-        
-        // Match by branch if specified in project
         const branchMatch = !project.branch || project.branch === branch;
-        
-        // Project must be active
         return repoMatch && branchMatch && project.active;
       });
 
@@ -68,7 +57,6 @@ export class WebhooksService {
         return { message: 'No matching active projects found for this repository/branch' };
       }
 
-      // Create deployments for matching projects
       const deployments = [];
       for (const project of matchingProjects) {
         const deployment = await this.deploymentsService.create({

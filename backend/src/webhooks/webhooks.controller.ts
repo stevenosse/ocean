@@ -12,18 +12,15 @@ export class WebhooksController {
     @Body() payload: any,
   ) {
     try {
-      // Only process push events
       if (event !== 'push') {
         return { message: `Ignoring event: ${event}` };
       }
 
-      // Verify webhook signature if available
       const isValid = await this.webhooksService.verifyWebhookSignature(payload, signature);
       if (!isValid) {
         throw new NotFoundException('Invalid webhook signature');
       }
 
-      // Process the webhook
       const result = await this.webhooksService.processGithubWebhook(payload);
       return result;
     } catch (error) {

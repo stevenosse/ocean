@@ -1,4 +1,4 @@
-import { defineNuxtPlugin } from '#app'
+import { ref, computed, onMounted } from 'vue'
 import { AuthResponse, User } from '~/types/user'
 
 export const useAuth = () => {
@@ -7,16 +7,18 @@ export const useAuth = () => {
   const user = ref<User | null>(null)
   const isAuthenticated = computed(() => !!user.value)
 
-  // Load user from localStorage on client side
+  
   onMounted(() => {
     if (process.client) {
-      const storedUser = localStorage.getItem('user')
-      if (storedUser) {
+      const userCookie = useCookie('user')
+      if (userCookie.value) {
         try {
-          user.value = JSON.parse(storedUser)
+          user.value = typeof userCookie.value === 'string'
+            ? JSON.parse(userCookie.value)
+            : userCookie.value
         } catch (e) {
           console.error('Failed to parse stored user:', e)
-          localStorage.removeItem('user')
+          userCookie.value = null
         }
       }
     }
@@ -25,23 +27,23 @@ export const useAuth = () => {
   const login = async (email: string, password: string) => {
     error.value = ''
     isLoading.value = true
-    
+
     try {
       const config = useRuntimeConfig()
       const baseURL = config.public.apiURL
-      
+
       const response = await $fetch<AuthResponse>(`${baseURL}/auth/login`, {
         method: 'POST',
         body: { email, password }
       })
-      
-      // Store token and user in localStorage
-      localStorage.setItem('token', response.access_token)
-      localStorage.setItem('user', JSON.stringify(response.user))
-      
-      // Update user state
+
+      const userCookie = useCookie('user')
+      const tokenCookie = useCookie('token')
+      userCookie.value = JSON.stringify(response.user)
+      tokenCookie.value = response.access_token
+
       user.value = response.user
-      
+
       return true
     } catch (e: any) {
       console.error('Login error:', e)
@@ -55,23 +57,23 @@ export const useAuth = () => {
   const register = async (email: string, password: string) => {
     error.value = ''
     isLoading.value = true
-    
+
     try {
       const config = useRuntimeConfig()
       const baseURL = config.public.apiURL
-      
+
       const response = await $fetch<AuthResponse>(`${baseURL}/auth/register`, {
         method: 'POST',
         body: { email, password }
       })
-      
-      // Store token and user in localStorage
-      localStorage.setItem('token', response.access_token)
-      localStorage.setItem('user', JSON.stringify(response.user))
-      
-      // Update user state
+
+      const userCookie = useCookie('user')
+      const tokenCookie = useCookie('token')
+      userCookie.value = JSON.stringify(response.user)
+      tokenCookie.value = response.access_token
+
       user.value = response.user
-      
+
       return true
     } catch (e: any) {
       console.error('Registration error:', e)
@@ -83,41 +85,42 @@ export const useAuth = () => {
   }
 
   const logout = () => {
-    // Clear localStorage
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    
-    // Reset user state
+    const userCookie = useCookie('user')
+    const tokenCookie = useCookie('token')
+    userCookie.value = null
+    tokenCookie.value = null
+
     user.value = null
-    
-    // Redirect to login page
+
     return navigateTo('/auth/login')
   }
 
   const checkAuth = () => {
     if (process.server) return true
-    
-    const token = localStorage.getItem('token')
-    if (!token) return false
-    
+
+    const tokenCookie = useCookie('token')
+    if (!tokenCookie.value) return false
+
     try {
-      // Simple JWT expiration check
-      const payload = JSON.parse(atob(token.split('.')[1]))
-      const expiry = payload.exp * 1000 // Convert to milliseconds
-      
+      const payload = JSON.parse(atob(tokenCookie.value.split('.')[1]))
+      const expiry = payload.exp * 1000
+
       if (Date.now() >= expiry) {
-        // Token expired, clear storage
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
+        const userCookie = useCookie('user')
+        const tokenCookie = useCookie('token')
+        userCookie.value = null
+        tokenCookie.value = null
         user.value = null
         return false
       }
-      
+
       return true
     } catch (error) {
       console.error('Invalid token format:', error)
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
+      const userCookie = useCookie('user')
+      const tokenCookie = useCookie('token')
+      userCookie.value = null
+      tokenCookie.value = null
       user.value = null
       return false
     }
@@ -137,30 +140,26 @@ export const useAuth = () => {
 
 export default defineNuxtPlugin(() => {
   const { checkAuth, user } = useAuth()
-  
-  // Initialize auth state
+
   if (process.client) {
-    // Check if token is valid
     const isValid = checkAuth()
-    
-    // If token is invalid and not on auth page, redirect to login
+
     if (!isValid && !window.location.pathname.startsWith('/auth/')) {
       navigateTo('/auth/login')
     }
-    
-    // Load user data from localStorage if available
-    const storedUser = localStorage.getItem('user')
-    if (storedUser && !user.value) {
+
+    const storedUser = useCookie('user')
+    if (storedUser.value && !user.value) {
       try {
-        user.value = JSON.parse(storedUser)
+        user.value = JSON.parse(storedUser.value)
       } catch (e) {
         console.error('Failed to parse stored user:', e)
-        localStorage.removeItem('user')
+        const userCookie = useCookie('user')
+        userCookie.value = null
       }
     }
   }
-  
-  // Make useAuth available throughout the app
+
   return {
     provide: {
       auth: useAuth()

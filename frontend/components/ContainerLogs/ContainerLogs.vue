@@ -118,25 +118,22 @@ const error = ref<string | null>(null)
 const logsContainer = ref<HTMLElement | null>(null)
 const autoScroll = ref(true)
 
-// Initialize ansi-to-html with custom options
 const ansiToHtml = new AnsiToHtml({
-  fg: '#FFF', // Default foreground color (white)
-  bg: '#000', // Default background color (black, matches your bg-gray-900)
-  newline: false, // We handle newlines ourselves
-  escapeXML: true, // Ensure HTML characters are escaped
+  fg: '#FFF',
+  bg: '#000',
+  newline: false,
+  escapeXML: true,
   stream: false,
   colors: {
-    // Custom colors for log levels
-    0: '#FF0000', // Red for errors
-    1: '#FFA500', // Orange for warnings
-    2: '#00FF00', // Green for info
-    3: '#00FFFF', // Cyan for debug
-    4: '#FFFFFF', // White for trace
-    5: '#FF00FF'  // Magenta for other levels
+    0: '#FF0000',
+    1: '#FFA500',
+    2: '#00FF00',
+    3: '#00FFFF',
+    4: '#FFFFFF',
+    5: '#FF00FF'
   }
 })
 
-// Fetch logs from the API
 const fetchLogs = async () => {
   if (loading.value) return
   
@@ -165,12 +162,9 @@ const fetchLogs = async () => {
   }
 }
 
-// Format log line with ANSI colors
 const formatLog = (log: string) => {
   return ansiToHtml.toHtml(log)
 }
-
-// Copy logs to clipboard
 const copyLogsToClipboard = async () => {
   if (!logs.value.length) return
   
@@ -183,42 +177,32 @@ const copyLogsToClipboard = async () => {
   }
 }
 
-// Scroll to the bottom of the logs container
 const scrollToBottom = () => {
   if (logsContainer.value) {
     logsContainer.value.scrollTop = logsContainer.value.scrollHeight
   }
 }
 
-// Handle scroll events to detect if user has manually scrolled
 const handleScroll = () => {
   if (!logsContainer.value) return
   
   const { scrollTop, scrollHeight, clientHeight } = logsContainer.value
-  // If we're near the bottom (within 50px), enable auto-scroll
-  // Otherwise, disable it as the user has manually scrolled up
   autoScroll.value = scrollHeight - scrollTop - clientHeight < 50
 }
-
-// Watch for changes in logs and scroll to bottom if auto-scroll is enabled
 watch(logs, () => {
   if (autoScroll.value) {
     nextTick(scrollToBottom)
   }
 })
 
-// Set up event listeners
 onMounted(() => {
-  // Fetch logs initially
   fetchLogs()
   
-  // Add scroll event listener
   if (logsContainer.value) {
     logsContainer.value.addEventListener('scroll', handleScroll)
   }
 })
 
-// Clean up event listeners
 onBeforeUnmount(() => {
   if (logsContainer.value) {
     logsContainer.value.removeEventListener('scroll', handleScroll)

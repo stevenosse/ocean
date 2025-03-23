@@ -33,7 +33,6 @@ export class ContainerHealthService {
 
       this.logger.debug(`Container ${containerName} status: ${containerStatus}, Health: ${containerState.Health?.Status || 'no healthcheck'}`);
 
-      // Update last health check timestamp
       await this.prisma.deployment.update({
         where: { id },
         data: {
@@ -47,7 +46,6 @@ export class ContainerHealthService {
         return;
       }
 
-      // Check if within startup grace period
       const startupTime = deployment.lastHealthCheck
         ? Date.now() - new Date(deployment.lastHealthCheck).getTime()
         : Infinity;
@@ -55,8 +53,7 @@ export class ContainerHealthService {
         this.logger.debug(`Container ${containerName} is within startup grace period (${Math.round(startupTime / 1000)}s/${this.STARTUP_GRACE_PERIOD / 1000}s)`);
         return;
       }
-      
-      // Check if we should disable monitoring after successful period
+
       const deploymentCompletedTime = deployment.completedAt
         ? Date.now() - new Date(deployment.completedAt).getTime()
         : 0;
@@ -71,7 +68,6 @@ export class ContainerHealthService {
         return;
       }
 
-      // Check Docker's built-in health status if available
       if (containerState.Health) {
         const healthStatus = containerState.Health.Status;
         if (healthStatus === 'healthy') {
@@ -83,17 +79,14 @@ export class ContainerHealthService {
           return;
         } else if (healthStatus === 'starting') {
           this.logger.debug(`Container ${containerName} healthcheck is still starting. Checking manually...`);
-          // Fall through to manual check if still starting
         }
       }
 
-      // Manual health check
       let isHealthy = false;
       let retries = 0;
 
       while (!isHealthy && retries < this.MAX_RETRIES) {
         try {
-          // Try health endpoint first (expecting 2xx/3xx)
           const { stdout: healthResponse } = await execAsync(
             `curl --silent --connect-timeout 5 --max-time 10 -w "%{http_code}" http://localhost:${containerPort}/health`
           );
@@ -103,7 +96,6 @@ export class ContainerHealthService {
             isHealthy = true;
             this.logger.debug(`Container ${containerName} is healthy (status ${healthStatusCode} on /health)`);
           } else {
-            // Fallback to root path, accepting 2xx/3xx or 404
             const { stdout: rootResponse } = await execAsync(
               `curl --silent --connect-timeout 5 --max-time 10 -w "%{http_code}" http://localhost:${containerPort}`
             );
@@ -156,7 +148,6 @@ export class ContainerHealthService {
     const { id, containerName, restartCount } = deployment;
 
     try {
-      // Increment restart count
       const updatedDeployment = await this.prisma.deployment.update({
         where: { id },
         data: {
@@ -164,7 +155,6 @@ export class ContainerHealthService {
         }
       });
 
-      // Check if we've exceeded the maximum restart attempts (5)
       if (updatedDeployment.restartCount > 5) {
         this.logger.warn(`Container ${containerName} has exceeded maximum restart attempts. Disabling monitoring.`);
         if (deployment.status != DeploymentStatus.completed) {
@@ -179,7 +169,6 @@ export class ContainerHealthService {
         return;
       }
 
-      // Try to restart the container
       this.logger.log(`Restarting container ${containerName} (attempt ${updatedDeployment.restartCount})...`);
       await execAsync(`docker restart ${containerName}`);
       this.logger.log(`Container ${containerName} restarted successfully`);

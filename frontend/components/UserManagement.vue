@@ -198,24 +198,19 @@ const toast = useToast();
 const users = ref([]);
 const filteredUsers = ref([]);
 const loadingUsers = ref(true);
-const isLoading = ref(false);
 const error = ref('');
-const successMessage = ref('');
 
-// Search and filter
+
 const searchQuery = ref('');
 const roleFilter = ref('');
 
-// User creation modal
 const showUserCreationModal = ref(false);
 
-// Role editing
 const showRoleEditModal = ref(false);
 const selectedUser = ref(null);
 const selectedRole = ref('');
 const isUpdatingRole = ref(false);
 
-// User deletion
 const showDeleteModal = ref(false);
 const isDeletingUser = ref(false);
 
@@ -224,7 +219,7 @@ const fetchUsers = async () => {
   try {
     const response = await api.get('/users');
     users.value = response;
-    filterUsers(); // Apply any existing filters
+    filterUsers();
   } catch (err) {
     console.error('Error fetching users:', err);
     error.value = 'Failed to load users';
@@ -234,9 +229,6 @@ const fetchUsers = async () => {
   }
 };
 
-// User creation is now handled by the UserCreationModal component
-
-// Filter users based on search query and role filter
 const filterUsers = () => {
   if (!users.value) return;
   
@@ -255,7 +247,6 @@ const clearSearch = () => {
   filterUsers();
 };
 
-// Role editing functions
 const toggleRoleEdit = (user) => {
   selectedUser.value = user;
   selectedRole.value = user.role;
@@ -272,10 +263,8 @@ const updateUserRole = async () => {
   
   isUpdatingRole.value = true;
   try {
-    // Call the API to update the user role
     await api.patch(`/users/${selectedUser.value.id}`, { role: selectedRole.value });
     
-    // Update the local user data
     const userIndex = users.value.findIndex(u => u.id === selectedUser.value.id);
     if (userIndex !== -1) {
       users.value[userIndex].role = selectedRole.value;
@@ -283,7 +272,7 @@ const updateUserRole = async () => {
     
     toast.success('Success', 'User role updated successfully');
     closeRoleEditModal();
-    filterUsers(); // Re-apply filters
+    filterUsers();
   } catch (err) {
     console.error('Error updating user role:', err);
     toast.error('Error', 'Failed to update user role');
@@ -292,7 +281,6 @@ const updateUserRole = async () => {
   }
 };
 
-// User deletion functions
 const confirmDeleteUser = (user) => {
   selectedUser.value = user;
   showDeleteModal.value = true;
@@ -308,12 +296,10 @@ const deleteUser = async () => {
   
   isDeletingUser.value = true;
   try {
-    // Call the API to delete the user
     await api.delete(`/users/${selectedUser.value.id}`);
     
-    // Remove the user from the local data
     users.value = users.value.filter(u => u.id !== selectedUser.value.id);
-    filterUsers(); // Re-apply filters
+    filterUsers();
     
     toast.success('Success', 'User deleted successfully');
     closeDeleteModal();

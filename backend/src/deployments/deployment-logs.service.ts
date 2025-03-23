@@ -96,10 +96,8 @@ export class DeploymentLogsService {
    * @param logs The logs to save
    */
   async updateDeploymentLogs(deploymentId: number, logs: string): Promise<void> {
-    // Log that we're updating the logs
     this.debug(`Updating logs for deployment ${deploymentId}`, 'Database');
     
-    // Update the deployment record in the database
     await this.prisma.deployment.update({
       where: { id: deploymentId },
       data: { logs }

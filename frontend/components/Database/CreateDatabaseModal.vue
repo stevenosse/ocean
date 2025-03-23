@@ -24,7 +24,6 @@
           />
         </div>
         
-        <!-- Error message display -->
         <div v-if="errorMessage" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
           <p class="text-sm text-red-600">{{ errorMessage }}</p>
         </div>
@@ -59,7 +58,6 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits, ref, watch } from 'vue';
 import type { CreateDatabaseDto } from '~/types';
 
 const props = defineProps<{
@@ -77,20 +75,17 @@ defineEmits<{
 const database = ref<CreateDatabaseDto>({ ...props.initialValue });
 const errorMessage = ref<string | null>(props.error || null);
 
-// Reset form when modal is opened/closed
 watch(() => props.show, (newValue) => {
   if (newValue) {
     database.value = { ...props.initialValue };
-    errorMessage.value = null; // Clear error when reopening
+    errorMessage.value = null;
   }
 });
 
-// Update database when initialValue changes
 watch(() => props.initialValue, (newValue) => {
   database.value = { ...newValue };
 });
 
-// Update error message when error prop changes
 watch(() => props.error, (newValue) => {
   errorMessage.value = newValue || null;
 });

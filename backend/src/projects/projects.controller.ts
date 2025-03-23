@@ -63,10 +63,8 @@ export class ProjectsController {
   @Post(':id/deploy')
   async triggerDeploy(@Param('id') id: string) {
     try {
-      // Verify project exists
       const project = await this.projectsService.findOne(+id);
 
-      // Create a deployment for this project
       return await this.deploymentsService.create({
         projectId: project.id,
         commitHash: '',

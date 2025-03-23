@@ -6,10 +6,8 @@
         <h1 class="text-3xl font-bold text-gray-900">Users</h1>
         <p class="text-gray-600 mt-2">Manage users and their access to the platform</p>
       </div>
-      <button
-        @click="showUserCreationModal = true"
-        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-      >
+      <button @click="showUserCreationModal = true"
+        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
         <svg class="-ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
           stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -243,27 +241,29 @@
       </div>
 
       <!-- Modal panel -->
-      <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+      <div
+        class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
         <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
           <div class="sm:flex sm:items-start">
-            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+            <div
+              class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
               <!-- Edit icon -->
-              <svg class="h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828l-11.414 11.414a1 1 0 01-1.414 0l-3.85-3.85a1 1 0 01-.293-.707v-2.828a1 1 0 01.293-.707l11.414-11.414z" />
+              <svg class="h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828l-11.414 11.414a1 1 0 01-1.414 0l-3.85-3.85a1 1 0 01-.293-.707v-2.828a1 1 0 01.293-.707l11.414-11.414z" />
               </svg>
             </div>
             <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
               <h3 class="text-lg leading-6 font-medium text-gray-900">Edit User Role</h3>
               <div class="mt-2">
-                <p class="text-sm text-gray-500">Change the role for user: <span class="font-medium">{{ selectedUser?.email }}</span></p>
+                <p class="text-sm text-gray-500">Change the role for user: <span class="font-medium">{{
+                    selectedUser?.email }}</span></p>
               </div>
               <div class="mt-4">
                 <label for="role" class="block text-sm font-medium text-gray-700">Role</label>
-                <select 
-                  id="role" 
-                  v-model="selectedRole" 
-                  class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-                >
+                <select id="role" v-model="selectedRole"
+                  class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
                   <option value="USER">User</option>
                   <option value="ADMIN">Admin</option>
                 </select>
@@ -272,17 +272,12 @@
           </div>
         </div>
         <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-          <button 
-            @click="updateUserRole" 
-            :disabled="isUpdatingRole"
-            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
-          >
+          <button @click="updateUserRole" :disabled="isUpdatingRole"
+            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50">
             {{ isUpdatingRole ? 'Updating...' : 'Update Role' }}
           </button>
-          <button 
-            @click="closeRoleEditModal" 
-            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-          >
+          <button @click="closeRoleEditModal"
+            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
             Cancel
           </button>
         </div>
@@ -291,21 +286,12 @@
   </div>
 
   <!-- Delete Confirmation Modal -->
-  <ConfirmationModal
-    :is-open="showDeleteModal"
-    title="Delete User"
+  <ConfirmationModal :is-open="showDeleteModal" title="Delete User"
     :message="`Are you sure you want to delete user ${selectedUser?.email}? This action cannot be undone.`"
-    confirm-button-text="Delete"
-    @confirm="deleteUser"
-    @close="closeDeleteModal"
-  />
-  
+    confirm-button-text="Delete" @confirm="deleteUser" @close="closeDeleteModal" />
+
   <!-- User Creation Modal -->
-  <UserCreationModal
-    :is-open="showUserCreationModal"
-    @close="showUserCreationModal = false"
-    @created="fetchUsers"
-  />
+  <UserCreationModal :is-open="showUserCreationModal" @close="showUserCreationModal = false" @created="fetchUsers" />
 </template>
 
 <script lang="ts" setup>
@@ -328,7 +314,6 @@ const toast = useToast();
 const router = useRouter();
 const { user: currentUser, isAuthenticated } = useAuth();
 
-// Check if user is admin
 onMounted(() => {
   if (!isAuthenticated.value || currentUser.value?.role !== 'ADMIN') {
     router.push('/dashboard');
@@ -336,27 +321,21 @@ onMounted(() => {
   fetchUsers();
 });
 
-// User data
-const users = ref([]);
+const users = ref<User[]>([]);
 const filteredUsers = ref<User[]>([]);
 const loading = ref(true);
 
-// Search and filter
 const searchQuery = ref('');
 const roleFilter = ref('');
 const sortOption = ref('email-asc');
 const viewMode = ref(ViewMode.Grid);
 
-// User creation modal
 const showUserCreationModal = ref(false);
-
-// Role editing
 const showRoleEditModal = ref(false);
-const selectedUser = ref(null);
+const selectedUser = ref<User | null>(null);
 const selectedRole = ref('');
 const isUpdatingRole = ref(false);
 
-// User deletion
 const showDeleteModal = ref(false);
 const isDeletingUser = ref(false);
 
@@ -376,17 +355,17 @@ const fetchUsers = async () => {
 
 const applyFilters = () => {
   if (!users.value) return;
-  
+
   filteredUsers.value = users.value.filter(user => {
-    const matchesSearch = !searchQuery.value || 
+    const matchesSearch = !searchQuery.value ||
       user.email.toLowerCase().includes(searchQuery.value.toLowerCase());
-    
+
     const matchesRole = !roleFilter.value || user.role === roleFilter.value;
-    
+
     return matchesSearch && matchesRole;
   });
 
-  filteredUsers.value.sort((a, b) => {
+  filteredUsers.value.sort((a: User, b: User) => {
     switch (sortOption.value) {
       case 'email-asc':
         return a.email.localeCompare(b.email);
@@ -413,7 +392,7 @@ const resetFilters = () => {
   applyFilters();
 };
 
-const toggleRoleEdit = (user) => {
+const toggleRoleEdit = (user: User) => {
   selectedUser.value = user;
   selectedRole.value = user.role;
   showRoleEditModal.value = true;
@@ -426,21 +405,19 @@ const closeRoleEditModal = () => {
 
 const updateUserRole = async () => {
   if (!selectedUser.value) return;
-  
+
   isUpdatingRole.value = true;
   try {
-    // Call the API to update the user role
-    await api.patch(`/users/${selectedUser.value.id}`, { role: selectedRole.value });
-    
-    // Update the local user data
+    await api.updateUser({ id: selectedUser.value.id, role: selectedRole.value });
+
     const userIndex = users.value.findIndex(u => u.id === selectedUser.value.id);
     if (userIndex !== -1) {
       users.value[userIndex].role = selectedRole.value;
     }
-    
+
     toast.success('Success', 'User role updated successfully');
     closeRoleEditModal();
-    applyFilters(); // Re-apply filters
+    applyFilters();
   } catch (err) {
     console.error('Error updating user role:', err);
     toast.error('Error', 'Failed to update user role');
@@ -449,8 +426,7 @@ const updateUserRole = async () => {
   }
 };
 
-// User deletion functions
-const confirmDeleteUser = (user) => {
+const confirmDeleteUser = (user: User) => {
   selectedUser.value = user;
   showDeleteModal.value = true;
 };
@@ -462,16 +438,14 @@ const closeDeleteModal = () => {
 
 const deleteUser = async () => {
   if (!selectedUser.value) return;
-  
+
   isDeletingUser.value = true;
   try {
-    // Call the API to delete the user
-    await api.delete(`/users/${selectedUser.value.id}`);
-    
-    // Remove the user from the local data
-    users.value = users.value.filter(u => u.id !== selectedUser.value.id);
-    applyFilters(); // Re-apply filters
-    
+    await api.deleteUser(selectedUser.value.id);
+
+    users.value = users.value.filter((u: User) => u.id !== selectedUser.value?.id);
+    applyFilters();
+
     toast.success('Success', 'User deleted successfully');
     closeDeleteModal();
   } catch (err) {

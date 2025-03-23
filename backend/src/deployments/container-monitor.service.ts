@@ -18,7 +18,6 @@ export class ContainerMonitorService {
     this.logger.log('Running container health check...');
 
     try {
-      // Get the latest deployment for each project with monitoring enabled
       const latestDeployments: [Deployment] = await this.prisma.$queryRaw`
         SELECT d.* FROM deployments d
         INNER JOIN (

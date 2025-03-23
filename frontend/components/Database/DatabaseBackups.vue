@@ -56,7 +56,6 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits } from 'vue';
 import type { DatabaseBackup } from '~/types';
 
 const props = defineProps<{
@@ -70,13 +69,11 @@ defineEmits<{
   (e: 'delete-backup', backup: DatabaseBackup): void;
 }>();
 
-// Format date
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
   return date.toLocaleString();
 };
 
-// Format file size
 const formatSize = (bytes: number) => {
   if (bytes === 0) return '0 Bytes';
   

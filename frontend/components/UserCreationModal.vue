@@ -115,17 +115,14 @@ const submitForm = async () => {
       password: formData.value.password
     })
     
-    // Reset form
     formData.value = {
       email: '',
       password: '',
       role: 'USER'
     }
     
-    // Emit created event
     emit('created')
     
-    // Close modal
     emit('close')
   } catch (err: any) {
     console.error('Error creating user:', err)
@@ -136,7 +133,6 @@ const submitForm = async () => {
 }
 
 const close = () => {
-  // Reset form and error state
   formData.value = {
     email: '',
     password: '',
@@ -144,7 +140,6 @@ const close = () => {
   }
   error.value = ''
   
-  // Emit close event
   emit('close')
 }
 </script>

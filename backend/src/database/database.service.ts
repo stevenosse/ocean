@@ -15,7 +15,6 @@ export class DatabaseService {
   private readonly backupDir = '/var/backups/ocean';
 
   constructor(private prisma: PrismaService) {
-    // Ensure backup directory exists
     this.ensureBackupDirExists();
   }
 
@@ -31,12 +30,10 @@ export class DatabaseService {
   }
 
   async createDatabase(createDatabaseDto: CreateDatabaseDto): Promise<ManagedDatabase> {
-    // Validate database name
     if (!/^[a-z0-9_]+$/.test(createDatabaseDto.name)) {
       throw new BadRequestException('Database name can only contain lowercase letters, numbers and underscores');
     }
 
-    // Check if database already exists
     const existingDb = await this.prisma.managedDatabase.findUnique({
       where: { name: createDatabaseDto.name }
     });
@@ -45,11 +42,9 @@ export class DatabaseService {
       throw new BadRequestException(`Database with name ${createDatabaseDto.name} already exists`);
     }
 
-    // Generate credentials
     const username = `db_${createDatabaseDto.name}`;
     const password = this.generatePassword();
 
-    // Create database using psql
     try {
       this.logger.log(`Creating database: ${createDatabaseDto.name}`);
       await execAsync(`createdb ${createDatabaseDto.name}`);
@@ -61,7 +56,6 @@ export class DatabaseService {
       throw new InternalServerErrorException('Failed to create database: ' + error.message);
     }
 
-    // Save to database
     return this.prisma.managedDatabase.create({
       data: {
         name: createDatabaseDto.name,
@@ -128,10 +122,8 @@ export class DatabaseService {
     try {
       this.logger.log(`Deleting database: ${db.name}`);
       
-      // Create a final backup before deletion
       await this.createBackup(id);
       
-      // Drop database and user
       await execAsync(`dropdb ${db.name}`);
       await execAsync(`psql -c "DROP USER IF EXISTS ${db.username}"`);
       
@@ -141,7 +133,6 @@ export class DatabaseService {
       throw new BadRequestException('Failed to delete database: ' + error.message);
     }
 
-    // Delete from database
     await this.prisma.managedDatabase.delete({
       where: { id }
     });
@@ -153,7 +144,6 @@ export class DatabaseService {
     const backupFilename = `${db.name}_${timestamp}.sql`;
     const backupPath = path.join(this.backupDir, backupFilename);
 
-    // Create backup record in pending state
     const backup = await this.prisma.databaseBackup.create({
       data: {
         databaseId,
@@ -166,19 +156,14 @@ export class DatabaseService {
     try {
       this.logger.log(`Creating backup for database: ${db.name}`);
       
-      // Create backup directory if it doesn't exist
       if (!fs.existsSync(path.dirname(backupPath))) {
         fs.mkdirSync(path.dirname(backupPath), { recursive: true });
       }
-
-      // Execute backup command
       await execAsync(`PGPASSWORD="${db.password}" pg_dump -U ${db.username} -h ${db.host} -p ${db.port} -F p -f "${backupPath}" ${db.name}`);
       
-      // Get file size
       const stats = fs.statSync(backupPath);
       const fileSizeInBytes = stats.size;
       
-      // Update backup record
       const updatedBackup = await this.prisma.databaseBackup.update({
         where: { id: backup.id },
         data: {
@@ -192,7 +177,6 @@ export class DatabaseService {
     } catch (error) {
       this.logger.error(`Failed to create backup: ${error.message}`);
       
-      // Update backup record to failed state
       await this.prisma.databaseBackup.update({
         where: { id: backup.id },
         data: {
@@ -219,12 +203,10 @@ export class DatabaseService {
     try {
       this.logger.log(`Restoring backup for database: ${db.name}`);
       
-      // Drop and recreate the database
       await execAsync(`dropdb --if-exists ${db.name}`);
       await execAsync(`createdb ${db.name}`);
       await execAsync(`psql -c "GRANT ALL PRIVILEGES ON DATABASE ${db.name} TO ${db.username}"`);
       
-      // Restore from backup
       await execAsync(`PGPASSWORD="${db.password}" psql -U ${db.username} -h ${db.host} -p ${db.port} -d ${db.name} -f "${backup.backupPath}"`);
       
       this.logger.log(`Successfully restored backup for database: ${db.name}`);
@@ -258,7 +240,6 @@ export class DatabaseService {
     const backup = await this.getBackup(id);
 
     try {
-      // Delete backup file
       if (fs.existsSync(backup.backupPath)) {
         fs.unlinkSync(backup.backupPath);
       }
@@ -266,14 +247,12 @@ export class DatabaseService {
       this.logger.error(`Failed to delete backup file: ${error.message}`);
     }
 
-    // Delete from database
     await this.prisma.databaseBackup.delete({
       where: { id }
     });
   }
 
   private generatePassword(): string {
-    // Generate a more secure password with 16 characters
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+';
     let password = '';
     for (let i = 0; i < 16; i++) {
