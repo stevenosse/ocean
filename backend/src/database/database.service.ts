@@ -6,6 +6,7 @@ import { promisify } from 'util';
 import { CreateDatabaseDto } from './dto/create-database.dto';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
 
 const execAsync = promisify(exec);
 
@@ -151,9 +152,66 @@ export class DatabaseService {
     return database;
   }
 
+  /**
+   * Determines if a direct database connection is possible from the current environment
+   * This is used to decide whether to use a direct connection or a tunnel
+   * @returns True if direct connection is possible, false otherwise
+   */
+  isDirectConnectionPossible(): boolean {
+    // Check if we're running in a local development environment
+    // where direct connections to the database are possible
+    const environment = process.env.NODE_ENV || 'development';
+    
+    // If we're in a production environment, direct connections might not be possible
+    // depending on network configuration
+    if (environment === 'production') {
+      // Check if we're running in the same network as the database
+      // This could be determined by environment variables or other configuration
+      const inSameNetwork = process.env.IN_DATABASE_NETWORK === 'true';
+      return inSameNetwork;
+    }
+    
+    // In development, we assume direct connections are possible if running locally
+    // Check if we're running on the same machine as the database
+    const hostname = os.hostname();
+    const isLocalMachine = hostname.includes('localhost') || 
+                          hostname.includes('127.0.0.1') || 
+                          hostname === 'localhost';
+    
+    return isLocalMachine;
+  }
+
   async getDatabaseConnectionString(id: number): Promise<string> {
     const database = await this.getDatabase(id);
-    return `postgresql://${database.username}:${database.password}@${database.host}:${database.port}/${database.name}`;
+    
+    // If the host is localhost, try to get the public IP for remote access
+    let host = database.host;
+    if (host === 'localhost' || host === '127.0.0.1') {
+      // Try to get the public IP from environment variable first
+      const publicIp = process.env.PUBLIC_IP;
+      if (publicIp) {
+        host = publicIp;
+      } else {
+        // Fallback to getting the local network IP
+        try {
+          const nets = os.networkInterfaces();
+          for (const name of Object.keys(nets)) {
+            for (const net of nets[name]) {
+              // Skip over non-IPv4 and internal (i.e. 127.0.0.1) addresses
+              if (net.family === 'IPv4' && !net.internal) {
+                host = net.address;
+                break;
+              }
+            }
+            if (host !== 'localhost' && host !== '127.0.0.1') break;
+          }
+        } catch (error) {
+          this.logger.warn(`Failed to get public IP: ${error.message}. Using original host.`);
+        }
+      }
+    }
+    
+    return `postgresql://${database.username}:${database.password}@${host}:${database.port}/${database.name}`;
   }
 
   async deleteDatabase(id: number): Promise<void> {

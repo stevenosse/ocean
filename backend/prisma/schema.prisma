@@ -93,17 +93,18 @@ model Environment {
 }
 
 model ManagedDatabase {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  name      String   @unique
-  username  String
-  password  String
-  host      String
-  port      Int      @default(5432)
-  projectId Int?
-  project   Project? @relation(fields: [projectId], references: [id])
-  backups   DatabaseBackup[]
+  id                     Int      @id @default(autoincrement())
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  name                   String   @unique
+  username               String
+  password               String
+  host                   String
+  port                   Int      @default(5432)
+  tunnelConnectionString String?  @map("tunnel_connection_string")
+  projectId              Int?
+  project                Project? @relation(fields: [projectId], references: [id])
+  backups                DatabaseBackup[]
 
   @@map("managed_databases")
 }

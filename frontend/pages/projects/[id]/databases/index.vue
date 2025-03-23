@@ -74,28 +74,25 @@
       <div class="divide-y divide-gray-200">
         <div v-for="database in databases" :key="database.id" class="p-6">
           <div class="flex justify-between items-start">
-            <div>
-              <h2 class="text-xl font-semibold text-gray-800">{{ database.name }}</h2>
-              <div class="flex items-center space-x-4 mt-1">
-                <p class="text-sm text-gray-500">
-                  <span class="inline-flex items-center">
-                    <svg class="mr-1 h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none"
-                      viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
-                    </svg>
-                    {{ database.host }}:{{ database.port }}
-                  </span>
-                </p>
-                <p class="text-sm">
-                  <span :class="['inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-          database.status === 'running' ? 'bg-green-100 text-green-800' :
-            database.status === 'stopped' ? 'bg-red-100 text-red-800' :
-              'bg-yellow-100 text-yellow-800']">
-                    {{ database.status }}
-                  </span>
-                </p>
+            <div class="space-y-2">
+              <h2 class="text-xl font-semibold text-gray-800 flex items-center">
+                {{ database.name }}
+                <span :class="['ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
+                  database.status === 'running' ? 'bg-green-100 text-green-800' :
+                  database.status === 'stopped' ? 'bg-red-100 text-red-800' :
+                  'bg-yellow-100 text-yellow-800']">
+                  {{ database.status }}
+                </span>
+              </h2>
+              <div class="flex items-center text-sm text-gray-600">
+                <svg class="mr-2 h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none"
+                  viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+                </svg>
+                <span class="font-mono">{{ database.host }}:{{ database.port }}</span>
               </div>
+              <DatabaseTunnelControls v-if="database" :database-id="database.id" class="mt-3" />
             </div>
             <div class="flex space-x-2">
               <button @click="showConnectionDetails(database)"
