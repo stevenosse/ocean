@@ -6,6 +6,7 @@ This guide provides step-by-step instructions to deploy a project with a NestJS 
 - Set up SSH tunneling to expose your local services.
 - Configure the backend and frontend with appropriate tunnel URLs.
 - Run both the backend and frontend, ensuring they can communicate.
+- Set up PostgreSQL for managed database functionality (if needed).
 
 ## Prerequisites
 
@@ -34,6 +35,19 @@ Before running the deployment script, ensure you have the following:
    └── README.md
    ```
 5. **Docker Desktop**: The script installs Docker Desktop, but you'll need to manually start it the first time and accept the terms of service.
+6. **PostgreSQL** (Optional): If you plan to use the managed database feature, PostgreSQL needs to be installed:
+   ```bash
+   brew install postgresql
+   ```
+   Start PostgreSQL service:
+   ```bash
+   brew services start postgresql
+   ```
+   Ensure PostgreSQL commands are in your PATH:
+   ```bash
+   echo 'export PATH="/usr/local/opt/postgresql/bin:$PATH"' >> ~/.zshrc
+   source ~/.zshrc
+   ```
 
 ## Deployment Steps
 
@@ -98,6 +112,19 @@ Once the script completes, it will display the URLs for both the frontend and ba
 
 ### Frontend not reaching backend
 - Verify that `frontend/.env` contains the correct `API_URL` (the backend's tunnel URL).
+
+### Managed Database Issues
+- If you encounter errors related to PostgreSQL commands not being found, ensure PostgreSQL is installed and its bin directory is in your PATH.
+- If database creation fails, check that the PostgreSQL service is running:
+  ```bash
+  brew services list  # Check if postgresql is started
+  brew services start postgresql  # Start if needed
+  ```
+- For backup issues, ensure the backup directory exists and is writable:
+  ```bash
+  sudo mkdir -p /var/backups/ocean
+  sudo chmod 777 /var/backups/ocean
+  ```
 - Use your browser's developer tools (Network tab) to confirm that the frontend is making requests to the correct backend URL.
 - Check that both tunnels are active by running `ps aux | grep ssh`.
 

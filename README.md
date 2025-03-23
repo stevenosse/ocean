@@ -1,8 +1,6 @@
 # Ocean - Deployment Automation Tool
 
-> ⚠️ **WARNING: This project is for development and testing purposes only. It is NOT intended for production use.**
-
-> ⚠️ **WARNING 2: ./scripts/deploy.sh may not work as expected. It needs some updates and we don't have the necessary time to update it at the moment.** 
+> ⚠️ **WARNING: This project is for development and testing purposes only. It is NOT intended for production use.** 
 
 Ocean is a deployment automation tool that monitors GitHub repositories and automatically deploys changes to Docker containers. It provides a user-friendly interface for configuring repositories, monitoring deployments, and managing the deployment process.
 
@@ -35,6 +33,8 @@ It should NOT be used in:
 - Deployment history and logs
 - Environment variables management with automatic redeployment
 - SSH tunneling for exposing deployments
+- PostgreSQL managed database creation and management
+- Database backup and restore functionality
 
 ## Prerequisites
 
@@ -99,6 +99,17 @@ Ocean allows you to manage environment variables for your projects:
 3. Add, edit, or delete environment variables as needed
 
 Changes to environment variables will automatically trigger a redeployment of your project.
+
+## Managed Databases
+
+Ocean provides built-in PostgreSQL database management:
+
+1. Navigate to the project details page
+2. Click on the "Databases" tab
+3. Create and manage PostgreSQL databases with auto-generated credentials
+4. Create backups and restore databases as needed
+
+For detailed documentation on the managed database feature, see [Managed Databases Documentation](docs/managed-databases.md).
 
 ## Docker Deployment
 

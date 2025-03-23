@@ -60,6 +60,31 @@ else
   print_status "Docker is already installed."
 fi
 
+# Step 4.5: Check for PostgreSQL (needed for managed database feature)
+if ! command -v psql &> /dev/null; then
+  print_status "PostgreSQL not found. If you plan to use the managed database feature, you should install PostgreSQL."
+  read -p "Do you want to install PostgreSQL? (y/n) " -n 1 -r
+  echo
+  if [[ $REPLY =~ ^[Yy]$ ]]; then
+    print_status "Installing PostgreSQL..."
+    brew install postgresql || print_error "Failed to install PostgreSQL."
+    print_status "Starting PostgreSQL service..."
+    brew services start postgresql || print_error "Failed to start PostgreSQL service."
+    print_status "Adding PostgreSQL bin directory to PATH..."
+    echo 'export PATH="/usr/local/opt/postgresql/bin:$PATH"' >> ~/.zshrc
+    export PATH="/usr/local/opt/postgresql/bin:$PATH"
+  else
+    print_status "Skipping PostgreSQL installation. Note that the managed database feature will not work."
+  fi
+else
+  print_status "PostgreSQL is already installed."
+  # Ensure PostgreSQL service is running
+  if ! brew services list | grep postgresql | grep started &> /dev/null; then
+    print_status "Starting PostgreSQL service..."
+    brew services start postgresql || print_status "Failed to start PostgreSQL service. You may need to start it manually."
+  fi
+fi
+
 # Step 5: Install backend dependencies (NestJS with Prisma)
 print_status "Installing backend dependencies..."
 cd backend
@@ -81,6 +106,15 @@ print_status "Generating Prisma client..."
 npx prisma generate || print_error "Failed to generate Prisma client."
 print_status "Building the backend..."
 npm run build || print_error "Failed to build the backend."
+
+# Step 7.5: Create backup directory for managed databases
+if command -v psql &> /dev/null; then
+  print_status "Creating backup directory for managed databases..."
+  # Create backup directory if specified in environment or use default
+  BACKUP_DIR=${DATABASE_BACKUP_DIR:-/var/backups/ocean}
+  sudo mkdir -p $BACKUP_DIR
+  sudo chmod 777 $BACKUP_DIR
+fi
 
 # Step 8: Run the backend in the background on port 3000
 print_status "Starting the backend on port 3000..."

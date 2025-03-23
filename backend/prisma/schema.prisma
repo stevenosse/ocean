@@ -104,6 +104,8 @@ model ManagedDatabase {
   projectId Int?
   project   Project? @relation(fields: [projectId], references: [id])
   backups   DatabaseBackup[]
+
+  @@map("managed_databases")
 }
 
 model DatabaseBackup {
@@ -114,4 +116,6 @@ model DatabaseBackup {
   backupPath  String
   size        Int
   status      String
+
+  @@map("database_backups")
 }
