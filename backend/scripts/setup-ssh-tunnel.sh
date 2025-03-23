@@ -3,11 +3,12 @@
 set -e
 
 if [ "$#" -lt 2 ]; then
-  echo "Usage: $0 <project_id> <local_port> [remote_port] [remote_host] [subdomain_name]"
+  echo "Usage: $0 <id> <local_port> [remote_port] [remote_host] [subdomain_name]"
+  echo "Note: <id> can be a project ID or a database ID (prefixed with 'db-')"
   exit 1
 fi
 
-PROJECT_ID=$1
+ID=$1
 LOCAL_PORT=$2
 REMOTE_PORT=$3
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -24,8 +25,18 @@ if [ -z "$REMOTE_HOST" ]; then
   exit 1
 fi
 
-SUBDOMAIN_NAME=${5:-$PROJECT_ID}
-TUNNEL_NAME="ocean-project-${PROJECT_ID}"
+# Check if this is a database tunnel (ID starts with 'db-')
+if [[ "$ID" == db-* ]]; then
+  # This is a database tunnel
+  DATABASE_ID=${ID#db-}
+  SUBDOMAIN_NAME=${5:-"db-$DATABASE_ID"}
+  TUNNEL_NAME="ocean-project-${ID}"
+  echo "Setting up database tunnel for database ID: $DATABASE_ID"
+else
+  # This is a project tunnel
+  SUBDOMAIN_NAME=${5:-$ID}
+  TUNNEL_NAME="ocean-project-${ID}"
+fi
 
 if [ -z "$REMOTE_PORT" ]; then
   BASE_PORT=$(grep SSH_TUNNEL_BASE_PORT "$ENV_FILE" | cut -d '=' -f2)

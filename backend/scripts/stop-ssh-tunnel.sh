@@ -3,12 +3,23 @@
 set -e
 
 if [ "$#" -lt 1 ]; then
-  echo "Usage: $0 <project_id>"
+  echo "Usage: $0 <id>"
+  echo "Note: <id> can be a project ID or a database ID (prefixed with 'db-')"
   exit 1
 fi
 
-PROJECT_ID=$1
-TUNNEL_NAME="ocean-project-${PROJECT_ID}"
+ID=$1
+TUNNEL_NAME="ocean-project-${ID}"
+
+# Check if this is a database tunnel (ID starts with 'db-')
+if [[ "$ID" == db-* ]]; then
+  # This is a database tunnel
+  DATABASE_ID=${ID#db-}
+  echo "Stopping database tunnel for database ID: $DATABASE_ID"
+else
+  # This is a project tunnel
+  echo "Stopping project tunnel for project ID: $ID"
+fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="${SCRIPT_DIR}/../.env"
@@ -35,6 +46,10 @@ if [ -S ~/.ssh/control-${TUNNEL_NAME}.sock ]; then
   rm -f ~/.ssh/control-${TUNNEL_NAME}.sock
 fi
 
-ssh tunneluser@${REMOTE_HOST} "sudo sed -i '/^${PROJECT_ID} [0-9]\+;$/d' /etc/nginx/project-ports.conf && sudo nginx -s reload"
-
-echo "Tunnel stopped for project $PROJECT_ID"
+# Only update nginx config for project tunnels, not database tunnels
+if [[ "$ID" != db-* ]]; then
+  ssh tunneluser@${REMOTE_HOST} "sudo sed -i '/^${ID} [0-9]\+;$/d' /etc/nginx/project-ports.conf && sudo nginx -s reload"
+  echo "Tunnel stopped for project $ID"
+else
+  echo "Tunnel stopped for database ${ID#db-}"
+fi

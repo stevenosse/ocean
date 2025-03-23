@@ -3,14 +3,12 @@ import { DatabaseService } from './database.service';
 import { ManagedDatabase, DatabaseBackup } from '@prisma/client';
 import { CreateDatabaseDto } from './dto/create-database.dto';
 import { DatabaseTunnelingService } from './database-tunneling.service';
-import { AutoTunnelManagerService } from './auto-tunnel-manager.service';
 
 @Controller('database')
 export class DatabaseController {
   constructor(
     private readonly databaseService: DatabaseService,
-    private readonly databaseTunnelingService: DatabaseTunnelingService,
-    private readonly autoTunnelManager: AutoTunnelManagerService
+    private readonly databaseTunnelingService: DatabaseTunnelingService
   ) { }
 
   @Post()
@@ -34,16 +32,13 @@ export class DatabaseController {
 
   @Get(':id/connection-string')
   async getDatabaseConnectionString(@Param('id') id: string): Promise<{ connectionString: string }> {
-    // First try to get a direct connection string
     const directConnectionString = await this.databaseService.getDatabaseConnectionString(Number(id));
     
-    // If we're in a context where direct connection is possible, use it
     if (this.databaseService.isDirectConnectionPossible()) {
       return { connectionString: directConnectionString };
     }
     
-    // Otherwise, ensure a tunnel exists and return the tunnel connection string
-    const tunnelConnectionString = await this.autoTunnelManager.ensureTunnelExists(Number(id));
+    const tunnelConnectionString = await this.databaseTunnelingService.createTunnel(Number(id));
     return { connectionString: tunnelConnectionString };
   }
 

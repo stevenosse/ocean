@@ -1,5 +1,5 @@
 import { useCookie, useRuntimeConfig } from 'nuxt/app'
-import type { Project, Deployment, Environment } from '~/types'
+import type { Project, Deployment, Environment, User } from '~/types'
 
 export const useApi = () => {
   const config = useRuntimeConfig()

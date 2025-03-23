@@ -10,11 +10,13 @@ import { DatabaseModule } from './database/database.module';
 import { TunnelingModule } from './tunneling/tunneling.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import serverConfig from './config/server.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      load: [serverConfig],
     }),
     GithubModule,
     PrismaModule,

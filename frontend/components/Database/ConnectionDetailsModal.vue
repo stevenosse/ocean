@@ -64,9 +64,6 @@
           </div>
         </div>
         
-        <!-- Database Tunnel Controls Integration -->
-        <DatabaseTunnelControls v-if="database" :database-id="database.id" />
-        
         <div class="mt-4 flex justify-end">
           <button
             @click="$emit('close')"

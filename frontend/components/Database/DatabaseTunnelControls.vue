@@ -7,7 +7,6 @@
         </div>
       </div>
       <div v-else class="space-y-2">
-        <!-- Status indicator with combined info -->
         <div class="flex items-center text-sm">
           <div class="flex-shrink-0 mr-2">
             <svg v-if="tunnelActive" class="h-4 w-4 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -25,7 +24,6 @@
           </div>
         </div>
 
-        <!-- Compact connection string -->
         <div v-if="tunnelConnectionString" class="mt-1">
           <div class="flex items-center">
             <input
@@ -47,7 +45,6 @@
           </div>
         </div>
 
-        <!-- Compact button -->
         <div v-if="tunnelActive" class="mt-1">
           <button
             class="inline-flex items-center px-2 py-1 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -88,11 +85,9 @@ onMounted(async () => {
   await fetchTunnelInfo()
 })
 
-// Fetch tunnel information and connection string in a single function
 async function fetchTunnelInfo() {
   loading.value = true
   try {
-    // This will automatically create a tunnel if needed
     const connectionString = await tunnelApi.getConnectionString(props.databaseId)
     if (connectionString) {
       tunnelConnectionString.value = connectionString
@@ -128,5 +123,3 @@ function copyConnectionString() {
   }
 }
 </script>
-
-<!-- No scoped styles needed as all styling is handled by Tailwind utility classes -->

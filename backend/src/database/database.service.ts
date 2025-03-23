@@ -13,7 +13,7 @@ const execAsync = promisify(exec);
 @Injectable()
 export class DatabaseService {
   private readonly logger = new Logger(DatabaseService.name);
-  private readonly backupDir = process.env.DATABASE_BACKUP_DIR || '/var/backups/ocean';
+  private readonly backupDir = process.env.DATABASE_BACKUP_DIR || path.join(process.cwd(), 'backups');
 
   constructor(private prisma: PrismaService) {
     this.ensureBackupDirExists();
@@ -23,24 +23,22 @@ export class DatabaseService {
     try {
       if (!fs.existsSync(this.backupDir)) {
         try {
-          // Try to create the directory with recursive option
-          fs.mkdirSync(this.backupDir, { recursive: true, mode: 0o777 });
+          fs.mkdirSync(this.backupDir, { recursive: true });
           this.logger.log(`Created backup directory: ${this.backupDir}`);
         } catch (mkdirError) {
-          // If we can't create it directly, log a more helpful error message
           this.logger.error(`Failed to create backup directory: ${mkdirError.message}`);
           this.logger.warn(`Please ensure the backup directory exists and is writable by running:\n` +
-                          `sudo mkdir -p ${this.backupDir}\n` +
-                          `sudo chmod 777 ${this.backupDir}`);
+            `mkdir -p ${this.backupDir}\n` +
+            `chmod 755 ${this.backupDir}`);
         }
       } else {
-        // Directory exists, check if it's writable
         try {
           fs.accessSync(this.backupDir, fs.constants.W_OK);
+          this.logger.log(`Backup directory exists and is writable: ${this.backupDir}`);
         } catch (accessError) {
           this.logger.warn(`Backup directory exists but is not writable: ${this.backupDir}`);
           this.logger.warn(`Please ensure the backup directory is writable by running:\n` +
-                          `sudo chmod 777 ${this.backupDir}`);
+            `chmod 755 ${this.backupDir}`);
         }
       }
     } catch (error) {
@@ -72,12 +70,12 @@ export class DatabaseService {
 
     const createdbExists = await this.commandExists('createdb');
     const psqlExists = await this.commandExists('psql');
-    
+
     if (!createdbExists || !psqlExists) {
       const missingCommands = [];
       if (!createdbExists) missingCommands.push('createdb');
       if (!psqlExists) missingCommands.push('psql');
-      
+
       const errorMessage = `PostgreSQL commands not found: ${missingCommands.join(', ')}. Please ensure PostgreSQL is installed and in your PATH.`;
       this.logger.error(errorMessage);
       throw new BadRequestException(errorMessage);
@@ -88,8 +86,16 @@ export class DatabaseService {
 
     try {
       this.logger.log(`Creating database: ${createDatabaseDto.name}`);
+
+      try {
+        await execAsync(`psql -c "CREATE USER ${username} WITH PASSWORD '${password}'"`);
+      } catch (userError) {
+        this.logger.warn(`User creation failed, trying to update password: ${userError.message}`);
+        await execAsync(`psql -c "ALTER USER ${username} WITH PASSWORD '${password}'"`);
+      }
+
       await execAsync(`createdb ${createDatabaseDto.name}`);
-      await execAsync(`psql -c "CREATE USER ${username} WITH PASSWORD '${password}'"`);
+
       await execAsync(`psql -c "GRANT ALL PRIVILEGES ON DATABASE ${createDatabaseDto.name} TO ${username}"`);
       this.logger.log(`Successfully created database: ${createDatabaseDto.name}`);
     } catch (error) {
@@ -158,46 +164,34 @@ export class DatabaseService {
    * @returns True if direct connection is possible, false otherwise
    */
   isDirectConnectionPossible(): boolean {
-    // Check if we're running in a local development environment
-    // where direct connections to the database are possible
     const environment = process.env.NODE_ENV || 'development';
-    
-    // If we're in a production environment, direct connections might not be possible
-    // depending on network configuration
+
     if (environment === 'production') {
-      // Check if we're running in the same network as the database
-      // This could be determined by environment variables or other configuration
       const inSameNetwork = process.env.IN_DATABASE_NETWORK === 'true';
       return inSameNetwork;
     }
-    
-    // In development, we assume direct connections are possible if running locally
-    // Check if we're running on the same machine as the database
+
     const hostname = os.hostname();
-    const isLocalMachine = hostname.includes('localhost') || 
-                          hostname.includes('127.0.0.1') || 
-                          hostname === 'localhost';
-    
+    const isLocalMachine = hostname.includes('localhost') ||
+      hostname.includes('127.0.0.1') ||
+      hostname === 'localhost';
+
     return isLocalMachine;
   }
 
   async getDatabaseConnectionString(id: number): Promise<string> {
     const database = await this.getDatabase(id);
-    
-    // If the host is localhost, try to get the public IP for remote access
+
     let host = database.host;
     if (host === 'localhost' || host === '127.0.0.1') {
-      // Try to get the public IP from environment variable first
       const publicIp = process.env.PUBLIC_IP;
       if (publicIp) {
         host = publicIp;
       } else {
-        // Fallback to getting the local network IP
         try {
           const nets = os.networkInterfaces();
           for (const name of Object.keys(nets)) {
             for (const net of nets[name]) {
-              // Skip over non-IPv4 and internal (i.e. 127.0.0.1) addresses
               if (net.family === 'IPv4' && !net.internal) {
                 host = net.address;
                 break;
@@ -210,7 +204,7 @@ export class DatabaseService {
         }
       }
     }
-    
+
     return `postgresql://${database.username}:${database.password}@${host}:${database.port}/${database.name}`;
   }
 
@@ -219,12 +213,12 @@ export class DatabaseService {
 
     const dropdbExists = await this.commandExists('dropdb');
     const psqlExists = await this.commandExists('psql');
-    
+
     if (!dropdbExists || !psqlExists) {
       const missingCommands = [];
       if (!dropdbExists) missingCommands.push('dropdb');
       if (!psqlExists) missingCommands.push('psql');
-      
+
       const errorMessage = `PostgreSQL commands not found: ${missingCommands.join(', ')}. Please ensure PostgreSQL is installed and in your PATH.`;
       this.logger.error(errorMessage);
       throw new BadRequestException(errorMessage);
@@ -232,12 +226,43 @@ export class DatabaseService {
 
     try {
       this.logger.log(`Deleting database: ${db.name}`);
-      
-      await this.createBackup(id);
-      
+
+      try {
+        // Create a final backup before deletion
+        await this.createBackup(id);
+      } catch (backupError) {
+        this.logger.warn(`Failed to create final backup before deletion: ${backupError.message}`);
+        // Continue with deletion even if backup fails
+      }
+
+      // Delete all associated backups first
+      const backups = await this.prisma.databaseBackup.findMany({
+        where: { databaseId: id }
+      });
+
+      // Delete backup files
+      for (const backup of backups) {
+        try {
+          if (fs.existsSync(backup.backupPath)) {
+            fs.unlinkSync(backup.backupPath);
+          }
+        } catch (error) {
+          this.logger.warn(`Failed to delete backup file ${backup.backupPath}: ${error.message}`);
+          // Continue with deletion even if file deletion fails
+        }
+      }
+
+      // Delete backup records from database
+      if (backups.length > 0) {
+        await this.prisma.databaseBackup.deleteMany({
+          where: { databaseId: id }
+        });
+      }
+
+      // Now drop the database and user
       await execAsync(`dropdb ${db.name}`);
       await execAsync(`psql -c "DROP USER IF EXISTS ${db.username}"`);
-      
+
       this.logger.log(`Successfully deleted database: ${db.name}`);
     } catch (error) {
       this.logger.error(`Failed to delete database: ${error.message}`);
@@ -255,41 +280,26 @@ export class DatabaseService {
     const backupFilename = `${db.name}_${timestamp}.sql`;
     const backupPath = path.join(this.backupDir, backupFilename);
 
-    // Check if pg_dump command is available
     const pgDumpExists = await this.commandExists('pg_dump');
-    
+
     if (!pgDumpExists) {
       const errorMessage = 'PostgreSQL command not found: pg_dump. Please ensure PostgreSQL is installed and in your PATH.';
       this.logger.error(errorMessage);
       throw new BadRequestException(errorMessage);
     }
 
-    // Ensure backup directory exists and is writable before proceeding
+    this.ensureBackupDirExists();
+
+    if (!fs.existsSync(this.backupDir)) {
+      const errorMessage = `Backup directory does not exist: ${this.backupDir}`;
+      this.logger.error(errorMessage);
+      throw new BadRequestException(errorMessage);
+    }
+
     try {
-      if (!fs.existsSync(this.backupDir)) {
-        try {
-          fs.mkdirSync(this.backupDir, { recursive: true, mode: 0o777 });
-          this.logger.log(`Created backup directory: ${this.backupDir}`);
-        } catch (mkdirError) {
-          const errorMessage = `Cannot create backup directory: ${mkdirError.message}. Please run: sudo mkdir -p ${this.backupDir} && sudo chmod 777 ${this.backupDir}`;
-          this.logger.error(errorMessage);
-          throw new BadRequestException(errorMessage);
-        }
-      } else {
-        // Check if directory is writable
-        try {
-          fs.accessSync(this.backupDir, fs.constants.W_OK);
-        } catch (accessError) {
-          const errorMessage = `Backup directory exists but is not writable: ${this.backupDir}. Please run: sudo chmod 777 ${this.backupDir}`;
-          this.logger.error(errorMessage);
-          throw new BadRequestException(errorMessage);
-        }
-      }
-    } catch (error) {
-      if (error instanceof BadRequestException) {
-        throw error; // Re-throw our custom exception
-      }
-      const errorMessage = `Error checking backup directory: ${error.message}`;
+      fs.accessSync(this.backupDir, fs.constants.W_OK);
+    } catch (accessError) {
+      const errorMessage = `Backup directory is not writable: ${this.backupDir}`;
       this.logger.error(errorMessage);
       throw new BadRequestException(errorMessage);
     }
@@ -305,12 +315,17 @@ export class DatabaseService {
 
     try {
       this.logger.log(`Creating backup for database: ${db.name}`);
-      
-      await execAsync(`PGPASSWORD="${db.password}" pg_dump -U ${db.username} -h ${db.host} -p ${db.port} -F p -f "${backupPath}" ${db.name}`);
-      
+
+      try {
+        await execAsync(`PGPASSWORD="${db.password}" pg_dump -U ${db.username} -h ${db.host} -p ${db.port} -F p -f "${backupPath}" ${db.name}`);
+      } catch (pgDumpError) {
+        this.logger.error(`pg_dump failed: ${pgDumpError.message}`);
+        throw new Error(`pg_dump failed: ${pgDumpError.message}`);
+      }
+
       const stats = fs.statSync(backupPath);
       const fileSizeInBytes = stats.size;
-      
+
       const updatedBackup = await this.prisma.databaseBackup.update({
         where: { id: backup.id },
         data: {
@@ -318,19 +333,19 @@ export class DatabaseService {
           status: 'COMPLETED'
         }
       });
-      
+
       this.logger.log(`Successfully created backup for database: ${db.name}`);
       return updatedBackup;
     } catch (error) {
       this.logger.error(`Failed to create backup: ${error.message}`);
-      
+
       await this.prisma.databaseBackup.update({
         where: { id: backup.id },
         data: {
           status: 'FAILED'
         }
       });
-      
+
       throw new BadRequestException('Failed to create backup: ' + error.message);
     }
   }
@@ -347,17 +362,16 @@ export class DatabaseService {
 
     const db = backup.database;
 
-    // Check if PostgreSQL commands are available
     const dropdbExists = await this.commandExists('dropdb');
     const createdbExists = await this.commandExists('createdb');
     const psqlExists = await this.commandExists('psql');
-    
+
     if (!dropdbExists || !createdbExists || !psqlExists) {
       const missingCommands = [];
       if (!dropdbExists) missingCommands.push('dropdb');
       if (!createdbExists) missingCommands.push('createdb');
       if (!psqlExists) missingCommands.push('psql');
-      
+
       const errorMessage = `PostgreSQL commands not found: ${missingCommands.join(', ')}. Please ensure PostgreSQL is installed and in your PATH.`;
       this.logger.error(errorMessage);
       throw new BadRequestException(errorMessage);
@@ -365,13 +379,13 @@ export class DatabaseService {
 
     try {
       this.logger.log(`Restoring backup for database: ${db.name}`);
-      
+
       await execAsync(`dropdb --if-exists ${db.name}`);
       await execAsync(`createdb ${db.name}`);
       await execAsync(`psql -c "GRANT ALL PRIVILEGES ON DATABASE ${db.name} TO ${db.username}"`);
-      
+
       await execAsync(`PGPASSWORD="${db.password}" psql -U ${db.username} -h ${db.host} -p ${db.port} -d ${db.name} -f "${backup.backupPath}"`);
-      
+
       this.logger.log(`Successfully restored backup for database: ${db.name}`);
     } catch (error) {
       this.logger.error(`Failed to restore backup: ${error.message}`);

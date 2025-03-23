@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -10,7 +11,10 @@ const execAsync = promisify(exec);
 export class DatabaseTunnelingService {
   private readonly logger = new Logger(DatabaseTunnelingService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService
+  ) {}
 
   /**
    * Create a tunnel for a database
@@ -32,34 +36,28 @@ export class DatabaseTunnelingService {
         throw new Error(`Database with ID ${databaseId} not found`);
       }
 
-      const scriptPath = path.join(process.cwd(), 'scripts/setup-db-tunnel.sh');
-      const command = `${scriptPath} ${databaseId} ${localPort}`;
+      const scriptPath = path.join(process.cwd(), 'scripts/setup-ssh-tunnel.sh');
+      const tunnelName = `db-${databaseId}`;
+      const command = `${scriptPath} ${tunnelName} ${localPort}`;
 
-      // Add a timeout of 30 seconds for the script execution
-      const { stdout, stderr } = await execAsync(command, { timeout: 30000 });
+      const { stderr } = await execAsync(command, { timeout: 30000 });
 
       if (stderr) {
-        this.logger.warn(`Database tunnel script stderr: ${stderr}`);
+        this.logger.warn(`SSH tunnel script stderr: ${stderr}`);
       }
 
-      // Extract the connection string from the output
-      const connectionStringMatch = stdout.match(/Remote database connection string: (postgresql:\/\/[^\n]+)/);
-      if (connectionStringMatch && connectionStringMatch[1]) {
-        const tunnelConnectionString = connectionStringMatch[1];
-        
-        // Update the database with the tunnel connection string
-        await this.prisma.managedDatabase.update({
-          where: { id: databaseId },
-          data: { 
-            tunnelConnectionString: tunnelConnectionString 
-          },
-        });
+      const serverHostname = this.configService.get<string>('server.hostname') || 'api.ocean.local';
+      const tunnelConnectionString = `postgresql://${database.username}:${database.password}@${serverHostname}:${localPort}/${database.name}`;
+      
+      await this.prisma.managedDatabase.update({
+        where: { id: databaseId },
+        data: { 
+          tunnelConnectionString: tunnelConnectionString 
+        },
+      });
 
-        this.logger.log(`Database tunnel created for database ${databaseId}`);
-        return tunnelConnectionString;
-      } else {
-        throw new Error('No tunnel connection string was obtained from database tunnel setup');
-      }
+      this.logger.log(`Database tunnel created for database ${databaseId}`);
+      return tunnelConnectionString;
     } catch (error) {
       this.logger.error(`Failed to create database tunnel for database ${databaseId}: ${error.message}`, error.stack);
       throw new Error(`Failed to create database tunnel: ${error.message}`);
@@ -72,14 +70,15 @@ export class DatabaseTunnelingService {
    */
   async stopTunnel(databaseId: number): Promise<void> {
     try {
-      const stopScriptPath = path.join(process.cwd(), 'scripts/stop-db-tunnel.sh');
-      const { stdout, stderr } = await execAsync(`${stopScriptPath} ${databaseId}`, { timeout: 15000 });
+      const stopScriptPath = path.join(process.cwd(), 'scripts/stop-ssh-tunnel.sh');
+      const tunnelName = `db-${databaseId}`;
+      
+      const { stdout, stderr } = await execAsync(`${stopScriptPath} ${tunnelName}`, { timeout: 15000 });
       if (stderr) {
-        this.logger.warn(`Stop database tunnel script stderr: ${stderr}`);
+        this.logger.warn(`Stop SSH tunnel script stderr: ${stderr}`);
       }
       this.logger.log(`Stopped database tunnel for database ${databaseId}: ${stdout}`);
       
-      // Clear the tunnel connection string
       await this.prisma.managedDatabase.update({
         where: { id: databaseId },
         data: { tunnelConnectionString: null },
@@ -96,7 +95,8 @@ export class DatabaseTunnelingService {
    */
   async isTunnelActive(databaseId: number): Promise<boolean> {
     try {
-      const { stdout } = await execAsync(`pgrep -f "ssh.*ocean-db-${databaseId}"`, { timeout: 5000 });
+      const tunnelName = `db-${databaseId}`;
+      const { stdout } = await execAsync(`pgrep -f "ssh.*ocean-project-${tunnelName}"`, { timeout: 5000 });
       return !!stdout.trim();
     } catch (error) {
       return false;
