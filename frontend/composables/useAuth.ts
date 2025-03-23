@@ -1,4 +1,4 @@
-import { useRuntimeConfig } from 'nuxt/app'
+import { useRuntimeConfig, useCookie, navigateTo } from 'nuxt/app'
 import { ref, computed } from 'vue'
 import { AuthResponse, User } from '~/types/user'
 
@@ -33,7 +33,7 @@ export const useAuth = () => {
       })
 
       tokenCookie.value = response.access_token
-      userCookie.value = response.user
+      userCookie.value = JSON.stringify(response.user)
 
       user.value = response.user
 
@@ -61,7 +61,7 @@ export const useAuth = () => {
       })
 
       tokenCookie.value = response.access_token
-      userCookie.value = response.user
+      userCookie.value = JSON.stringify(response.user)
 
       user.value = response.user
 
@@ -100,10 +100,9 @@ export const useAuth = () => {
         }
       });
 
-      // Update user state if returned
       if (response.user) {
         user.value = response.user;
-        userCookie.value = response.user;
+        userCookie.value = JSON.stringify(response.user);
       }
 
       return true;

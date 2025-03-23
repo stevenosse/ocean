@@ -1,6 +1,7 @@
 import { User, AuthResponse } from './user'
+import { ManagedDatabase, DatabaseBackup, CreateDatabaseDto, ConnectionStringResponse } from './database'
 
-export { User, AuthResponse }
+export { User, AuthResponse, ManagedDatabase, DatabaseBackup, CreateDatabaseDto, ConnectionStringResponse }
 
 export enum DeploymentStatus {
   PENDING = 'pending',

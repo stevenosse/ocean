@@ -365,7 +365,7 @@ const fetchUsers = async () => {
   try {
     const response = await api.fetchUsers();
     users.value = response;
-    applyFilters(); // Apply any existing filters
+    applyFilters();
   } catch (err) {
     console.error('Error fetching users:', err);
     toast.error('Error', 'Failed to load users');
@@ -374,7 +374,6 @@ const fetchUsers = async () => {
   }
 };
 
-// Filter and sort users
 const applyFilters = () => {
   if (!users.value) return;
   
@@ -387,7 +386,6 @@ const applyFilters = () => {
     return matchesSearch && matchesRole;
   });
 
-  // Apply sorting
   filteredUsers.value.sort((a, b) => {
     switch (sortOption.value) {
       case 'email-asc':
@@ -404,7 +402,6 @@ const applyFilters = () => {
   });
 };
 
-// Watch for changes in filters and sort options
 watch([searchQuery, roleFilter, sortOption], () => {
   applyFilters();
 });
@@ -416,7 +413,6 @@ const resetFilters = () => {
   applyFilters();
 };
 
-// Role editing functions
 const toggleRoleEdit = (user) => {
   selectedUser.value = user;
   selectedRole.value = user.role;

@@ -1,12 +1,11 @@
-import { useRuntimeConfig } from 'nuxt/app'
+import { useCookie, useRuntimeConfig } from 'nuxt/app'
 import type { Project, Deployment, Environment } from '~/types'
 
 export const useApi = () => {
   const config = useRuntimeConfig()
   const baseURL = config.public.apiURL
-  
-  // Helper function to get auth headers using Nuxt's useCookie
-  const getAuthHeaders = () => {
+
+  const getAuthHeaders = (): HeadersInit => {
     const token = useCookie('token').value
     return token ? { Authorization: `Bearer ${token}` } : {}
   }
@@ -49,7 +48,7 @@ export const useApi = () => {
   const updateProject = async (id: number, project: Partial<Project>): Promise<Project | null> => {
     try {
       const { id: projectId, createdAt, updatedAt, applicationUrl, ...cleanedProject } = project;
-      
+
       return await $fetch<Project>(`${baseURL}/projects/${id}`, {
         method: 'PATCH',
         body: cleanedProject,
@@ -166,7 +165,7 @@ export const useApi = () => {
       return false
     }
   }
-  
+
   const fetchProjectLogs = async (projectId: number): Promise<string[]> => {
     try {
       return await $fetch<string[]>(`${baseURL}/projects/${projectId}/logs`, {
@@ -248,14 +247,14 @@ export const useApi = () => {
     createProject,
     updateProject,
     deleteProject,
-    
+
     // Deployment methods
     fetchDeployments,
     fetchDeployment,
     fetchProjectDeployments,
     fetchProjectLogs,
     triggerDeploy,
-    
+
     // Environment methods
     fetchEnvironments,
     fetchEnvironment,

@@ -5,6 +5,7 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import * as bcrypt from 'bcrypt';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { ChangePasswordResponse } from './responses/change-password.response';
 
 @Injectable()
 export class AuthService {
@@ -28,7 +29,6 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Get the complete user data to check forcePasswordChange flag
     const fullUser = await this.usersService.findOne(user.id);
 
     const payload = { email: user.email, sub: user.id, role: user.role };
@@ -74,14 +74,12 @@ export class AuthService {
     };
   }
 
-  async changePassword(userId: number, changePasswordDto: ChangePasswordDto) {
-    // Get the user
+  async changePassword(userId: number, changePasswordDto: ChangePasswordDto): Promise<ChangePasswordResponse> {
     const user = await this.usersService.findOne(userId);
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
 
-    // Verify current password
     const isPasswordValid = await bcrypt.compare(
       changePasswordDto.currentPassword,
       user.passwordHash,
@@ -91,13 +89,9 @@ export class AuthService {
       throw new UnauthorizedException('Current password is incorrect');
     }
 
-    // Hash the new password
     const newPasswordHash = await bcrypt.hash(changePasswordDto.newPassword, 10);
-
-    // Update the password and reset forcePasswordChange flag
     const updatedUser = await this.usersService.updatePassword(userId, newPasswordHash);
 
-    // Return updated user info without password
     const { passwordHash, ...result } = updatedUser;
     return {
       message: 'Password changed successfully',
@@ -105,6 +99,8 @@ export class AuthService {
         id: result.id,
         email: result.email,
         role: result.role,
+        createdAt: result.createdAt,
+        updatedAt: result.updatedAt,
         forcePasswordChange: result.forcePasswordChange,
       },
     };
