@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as path from 'path';
+import { sanitizeForSubdomain } from './utils/string-utils';
 
 const execAsync = promisify(exec);
 
@@ -37,7 +38,9 @@ export class SshTunnelingService {
       }
 
       const sshScriptPath = path.join(process.cwd(), 'scripts/setup-ssh-tunnel.sh');
-      const sshCommand = `${sshScriptPath} ${projectId} ${port}`;
+      const sanitizedName = sanitizeForSubdomain(project.name, projectId);
+      const remotePort = this.calculateRemotePort(projectId);
+      const sshCommand = `${sshScriptPath} ${projectId} ${port} ${remotePort} ${this.remoteHost} "${sanitizedName}"`;
 
       // Add a timeout of 30 seconds for the script execution
       const { stdout: sshOutput, stderr } = await execAsync(sshCommand, { timeout: 30000 });

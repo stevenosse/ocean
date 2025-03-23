@@ -409,23 +409,26 @@ onMounted(async () => {
 const toast = useToast()
 const router = useRouter()
 const showDeleteModal = ref(false)
+const isDeleting = ref(false)
 
 const deleteProject = async () => {
   if (!project.value) return
+  isDeleting.value = true
 
   try {
     const result = await api.deleteProject(project.value.id)
     if (result) {
       toast.success('Project deleted successfully!')
-
       router.push('/projects')
     } else {
       toast.error('Failed to delete project', 'Please try again.')
     }
   } catch (error) {
     console.error('Error deleting project:', error)
-    toast.error('Failed to delete project', 'Please try again.')
+    const errorMessage = error.response?.statusText || error.message || 'Unknown error'
+    toast.error(`Failed to delete project: ${errorMessage}`, 'Please try again.')
   } finally {
+    isDeleting.value = false
     showDeleteModal.value = false
   }
 }

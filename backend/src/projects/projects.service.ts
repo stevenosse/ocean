@@ -82,7 +82,28 @@ export class ProjectsService {
       const databases = await prisma.managedDatabase.findMany({
         where: { projectId: id }
       });
+
       for (const db of databases) {
+        const backups = await prisma.databaseBackup.findMany({
+          where: { databaseId: db.id }
+        });
+
+        for (const backup of backups) {
+          try {
+            if (fs.existsSync(backup.backupPath)) {
+              fs.unlinkSync(backup.backupPath);
+            }
+          } catch (error) {
+            console.warn(`Failed to delete backup file ${backup.backupPath}: ${error.message}`);
+          }
+        }
+
+        if (backups.length > 0) {
+          await prisma.databaseBackup.deleteMany({
+            where: { databaseId: db.id }
+          });
+        }
+
         try {
           await execAsync(`dropdb ${db.name} || true`);
           await execAsync(`psql -c "DROP USER ${db.username}" || true`);

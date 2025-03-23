@@ -84,7 +84,7 @@ fi
 
 ssh tunneluser@${REMOTE_HOST} "sudo sed -i '/^${SUBDOMAIN_NAME} /d' /etc/nginx/project-ports.conf && echo '$SUBDOMAIN_NAME $REMOTE_PORT;' | sudo tee -a /etc/nginx/project-ports.conf && sudo nginx -s reload"
 
-PUBLIC_URL="http://${REMOTE_HOST}:${REMOTE_PORT}"
+PUBLIC_URL="http://${SUBDOMAIN_NAME}.$(grep SSH_TUNNEL_SUBDOMAIN "$ENV_FILE" | cut -d '=' -f2 || echo 'tunnel.trybefit.app')"
 
 echo "Tunnel established for project $PROJECT_ID"
 echo "Remote port: $REMOTE_PORT"

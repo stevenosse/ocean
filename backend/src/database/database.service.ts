@@ -228,19 +228,15 @@ export class DatabaseService {
       this.logger.log(`Deleting database: ${db.name}`);
 
       try {
-        // Create a final backup before deletion
         await this.createBackup(id);
       } catch (backupError) {
         this.logger.warn(`Failed to create final backup before deletion: ${backupError.message}`);
-        // Continue with deletion even if backup fails
       }
 
-      // Delete all associated backups first
       const backups = await this.prisma.databaseBackup.findMany({
         where: { databaseId: id }
       });
 
-      // Delete backup files
       for (const backup of backups) {
         try {
           if (fs.existsSync(backup.backupPath)) {
@@ -248,18 +244,15 @@ export class DatabaseService {
           }
         } catch (error) {
           this.logger.warn(`Failed to delete backup file ${backup.backupPath}: ${error.message}`);
-          // Continue with deletion even if file deletion fails
         }
       }
 
-      // Delete backup records from database
       if (backups.length > 0) {
         await this.prisma.databaseBackup.deleteMany({
           where: { databaseId: id }
         });
       }
 
-      // Now drop the database and user
       await execAsync(`dropdb ${db.name}`);
       await execAsync(`psql -c "DROP USER IF EXISTS ${db.username}"`);
 
