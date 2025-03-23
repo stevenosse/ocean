@@ -32,7 +32,7 @@
 
     <div v-else class="bg-white shadow-md overflow-hidden sm:rounded-lg border border-gray-100">
       <div class="px-6 py-6 sm:p-8">
-        <form @submit.prevent="validateAndSaveProject" class="max-w-3xl mx-auto">
+        <form @submit.prevent="validateAndSaveProject" class="mt-8 space-y-6">
           <div class="space-y-8">
             <!-- Project Name Field -->
             <div class="relative">
@@ -42,8 +42,8 @@
                   type="text" 
                   id="name" 
                   v-model="project.name" 
-                  :class="['block w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base', 
-                    errors.name ? 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500']"
+                  :class="['appearance-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm', 
+                    errors.name ? 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300']"
                   @blur="validateField('name')"
                   placeholder="Enter project name"
                 />
@@ -61,8 +61,8 @@
                   type="text" 
                   id="repositoryUrl" 
                   v-model="project.repositoryUrl" 
-                  :class="['block w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base', 
-                    errors.repositoryUrl ? 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500']"
+                  :class="['appearance-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm', 
+                    errors.repositoryUrl ? 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300']"
                   @blur="validateField('repositoryUrl')"
                   placeholder="https://github.com/username/repo.git"
                 />
@@ -81,7 +81,7 @@
                   type="text" 
                   id="branch" 
                   v-model="project.branch" 
-                  class="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base"
+                  class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                   placeholder="main"
                 />
               </div>
@@ -96,7 +96,7 @@
                   type="text" 
                   id="rootFolder" 
                   v-model="project.rootFolder" 
-                  class="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base"
+                  class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                   placeholder="/"
                 />
               </div>
@@ -115,7 +115,7 @@
                     type="text" 
                     id="installCommand" 
                     v-model="project.installCommand" 
-                    class="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base"
+                    class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                     placeholder="npm install"
                   />
                 </div>
@@ -130,7 +130,7 @@
                     type="text" 
                     id="buildCommand" 
                     v-model="project.buildCommand" 
-                    class="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base"
+                    class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                     placeholder="npm run build"
                   />
                 </div>
@@ -145,7 +145,7 @@
                     type="text" 
                     id="startCommand" 
                     v-model="project.startCommand" 
-                    class="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base"
+                    class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                     placeholder="npm start"
                   />
                 </div>
@@ -160,7 +160,7 @@
                     type="text" 
                     id="outputDirectory" 
                     v-model="project.outputDirectory" 
-                    class="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base"
+                    class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                     placeholder="dist"
                   />
                 </div>
@@ -180,7 +180,7 @@
                     type="text" 
                     id="dockerComposeFile" 
                     v-model="project.dockerComposeFile" 
-                    class="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base"
+                    class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                     placeholder="docker-compose.yml"
                   />
                 </div>
@@ -195,7 +195,7 @@
                     type="text" 
                     id="dockerServiceName" 
                     v-model="project.dockerServiceName" 
-                    class="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base"
+                    class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                     placeholder="app"
                   />
                 </div>
@@ -211,7 +211,7 @@
                   type="text" 
                   id="webhookSecret" 
                   v-model="project.webhookSecret" 
-                  class="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-offset-0 transition-colors duration-200 text-base"
+                  class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                   placeholder="Enter webhook secret"
                 />
               </div>
@@ -238,13 +238,13 @@
               <button 
                 type="button" 
                 @click="$router.push(`/projects/${project.id}`)" 
-                class="mr-4 inline-flex items-center px-5 py-3 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+                class="mr-4 group relative flex justify-center py-2 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 Cancel
               </button>
               <button 
                 type="submit" 
-                class="inline-flex items-center px-5 py-3 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+                class="group relative flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 :disabled="isSubmitting"
               >
                 <svg v-if="isSubmitting" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
