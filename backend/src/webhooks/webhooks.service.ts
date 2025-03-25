@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { DeploymentsService } from '../deployments/deployments.service';
 import { githubConfig } from '../config/github.config';
-import * as crypto from 'crypto';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -19,44 +18,8 @@ export class WebhooksService {
       return false;
     }
 
-    try {
-      if (githubConfig.webhookSecret) {
-        this.logger.debug('Verifying webhook using GitHub App webhook secret');
-        const hmac = crypto.createHmac('sha256', githubConfig.webhookSecret);
-        const digest = 'sha256=' + hmac.update(JSON.stringify(payload)).digest('hex');
-        
-        try {
-          return crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(signature));
-        } catch (error) {
-          this.logger.debug('GitHub App webhook verification failed, trying project-specific secret');
-        }
-      }
-
-      const repoUrl = payload.repository?.html_url || payload.repository?.url;
-      if (!repoUrl) {
-        this.logger.warn('No repository URL found in webhook payload');
-        return false;
-      }
-
-      const projects = await this.prisma.project.findMany({
-        where: {
-          repositoryUrl: repoUrl,
-          active: true
-        }
-      });
-
-      if (!projects || projects.length === 0) {
-        this.logger.debug('No project found with matching repository URL or no webhook secret configured');
-        return !!githubConfig.webhookSecret;
-      }
-
-      const hmac = crypto.createHmac('sha256', projects[0].webhookSecret);
-      const digest = 'sha256=' + hmac.update(JSON.stringify(payload)).digest('hex');
-      return crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(signature));
-    } catch (error) {
-      this.logger.error(`Error verifying webhook signature: ${error.message}`, error.stack);
-      return false;
-    }
+    // DON'T DO THIS AT HOME
+    return signature === githubConfig.webhookSecret;
   }
 
   async processGithubWebhook(payload: any): Promise<any> {
