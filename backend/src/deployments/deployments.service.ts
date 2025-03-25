@@ -59,4 +59,10 @@ export class DeploymentsService {
       orderBy: { createdAt: 'desc' },
     });
   }
+
+  async processDeployments(deployments: Deployment[]): Promise<void> {
+    for (const deployment of deployments) {
+      this.deploymentWorkerService.startDeployment(deployment);
+    }
+  }
 }
