@@ -1,5 +1,6 @@
 <template>
   <div class="min-h-screen bg-gray-50">
+    <ToastContainer />
     <nav class="bg-white shadow-sm">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
@@ -55,9 +56,15 @@
 <script setup>
 import { useAuth } from '~/composables/useAuth';
 import { useRoute } from 'vue-router';
+import { onMounted } from 'vue';
+import ToastContainer from '~/components/Toast/ToastContainer.vue';
 
 const route = useRoute();
-const { user, isAuthenticated, logout } = useAuth();
+const { user, isAuthenticated, logout, initAuth } = useAuth();
+
+onMounted(() => {
+  initAuth();
+});
 
 const isActive = (path) => {
   return route.path === path || (path !== '/' && route.path.startsWith(path));

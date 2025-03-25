@@ -295,26 +295,27 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted } from 'vue';
-import { useApi } from '~/composables/useApi';
+import { ref, onMounted, watch } from 'vue';
 import { useToast } from '~/composables/useToast';
 import { useAuth } from '~/composables/useAuth';
 import { useRouter } from 'vue-router';
 import ConfirmationModal from '~/components/ConfirmationModal.vue';
 import UserCreationModal from '~/components/UserCreationModal.vue';
 import { User } from '~/types';
+import { useUsers } from '~/composables/useUsers';
 
 enum ViewMode {
   Grid = 'grid',
   List = 'list',
 }
 
-const api = useApi();
+const { fetchUsers: apiFetchUsers, updateUserRole: apiUpdateUserRole, deleteUser: apiDeleteUser } = useUsers()
 const toast = useToast();
 const router = useRouter();
-const { user: currentUser, isAuthenticated } = useAuth();
+const { user: currentUser, isAuthenticated, initAuth } = useAuth();
 
-onMounted(() => {
+onMounted(async () => {
+  await initAuth();
   if (!isAuthenticated.value || currentUser.value?.role !== 'ADMIN') {
     router.push('/dashboard');
   }
@@ -342,7 +343,7 @@ const isDeletingUser = ref(false);
 const fetchUsers = async () => {
   loading.value = true;
   try {
-    const response = await api.fetchUsers();
+    const response = await apiFetchUsers();
     users.value = response;
     applyFilters();
   } catch (err) {
@@ -408,9 +409,9 @@ const updateUserRole = async () => {
 
   isUpdatingRole.value = true;
   try {
-    await api.updateUser({ id: selectedUser.value.id, role: selectedRole.value });
+    await apiUpdateUserRole(selectedUser.value.id, selectedRole.value);
 
-    const userIndex = users.value.findIndex(u => u.id === selectedUser.value.id);
+    const userIndex = users.value.findIndex(u => u.id === selectedUser.value?.id);
     if (userIndex !== -1) {
       users.value[userIndex].role = selectedRole.value;
     }
@@ -441,22 +442,20 @@ const deleteUser = async () => {
 
   isDeletingUser.value = true;
   try {
-    await api.deleteUser(selectedUser.value.id);
+    const response = await apiDeleteUser(selectedUser.value.id);
+    if (response) {
+      users.value = users.value.filter((u: User) => u.id !== selectedUser.value?.id);
+      applyFilters();
+      toast.success('Success', 'User deleted successfully');
+    }
 
-    users.value = users.value.filter((u: User) => u.id !== selectedUser.value?.id);
-    applyFilters();
-
-    toast.success('Success', 'User deleted successfully');
     closeDeleteModal();
-  } catch (err) {
-    console.error('Error deleting user:', err);
-    toast.error('Error', 'Failed to delete user');
   } finally {
     isDeletingUser.value = false;
   }
 };
 
-const formatDate = (dateString) => {
+const formatDate = (dateString: string) => {
   if (!dateString) return 'N/A';
   return new Date(dateString).toLocaleString();
 };

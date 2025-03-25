@@ -1,6 +1,5 @@
 <template>
   <div>
-    <!-- Header Section -->
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-3xl font-bold text-gray-900">Projects</h1>
       <NuxtLink to="/projects/new"
@@ -9,14 +8,12 @@
           stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
         </svg>
-        <span>New Project</span>
+        <span>New project</span>
       </NuxtLink>
     </div>
 
-    <!-- Filter and View Controls -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
       <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-        <!-- Search Input -->
         <div class="relative w-full sm:w-64">
           <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -29,7 +26,6 @@
             class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
         </div>
 
-        <!-- Status Filter -->
         <select v-model="statusFilter"
           class="block w-full sm:w-auto pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
           <option value="all">All Status</option>
@@ -39,7 +35,6 @@
       </div>
 
       <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
-        <!-- Sort Options -->
         <select v-model="sortOption"
           class="block w-full sm:w-auto pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
           <option value="name-asc">Name (A-Z)</option>
@@ -48,7 +43,6 @@
           <option value="date-asc">Oldest First</option>
         </select>
 
-        <!-- View Toggle -->
         <div class="inline-flex rounded-md shadow-sm">
           <button @click="viewMode = ViewMode.Grid" :class="{
             'px-4 py-2 text-sm font-medium rounded-l-md border': true,
@@ -76,13 +70,11 @@
       </div>
     </div>
 
-    <!-- Loading State -->
     <div v-if="loading" class="text-center py-10">
       <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       <p class="mt-2 text-gray-500">Loading projects...</p>
     </div>
 
-    <!-- Empty State - No Projects At All -->
     <div v-else-if="projects.length === 0" class="bg-white shadow overflow-hidden sm:rounded-lg">
       <div class="px-4 py-12 text-center">
         <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -105,7 +97,6 @@
       </div>
     </div>
 
-    <!-- No Results After Filtering -->
     <div v-else-if="filteredProjects.length === 0" class="bg-white shadow overflow-hidden sm:rounded-lg">
       <div class="px-4 py-12 text-center">
         <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -129,12 +120,10 @@
       </div>
     </div>
 
-    <!-- Projects Grid View -->
     <div v-else-if="viewMode === 'grid' && filteredProjects.length > 0"
       class="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
       <div v-for="project in filteredProjects" :key="project.id"
         class="bg-white shadow-md rounded-lg border border-gray-200 hover:shadow-lg transition-shadow duration-300 flex flex-col h-full w-full">
-        <!-- Card Header with Status Badge -->
         <div class="px-5 pt-5 pb-3 flex justify-between items-start">
           <div class="text-lg font-semibold text-blue-600">
             <NuxtLink :to="`/projects/${project.id}`" class="hover:underline">
@@ -150,9 +139,7 @@
           </span>
         </div>
 
-        <!-- Card Body -->
         <div class="px-5 pb-4 flex-grow flex flex-col">
-          <!-- Repository URL -->
           <div class="text-sm text-gray-500 flex items-start mb-2">
             <svg class="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400 mt-0.5" xmlns="http://www.w3.org/2000/svg"
               fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -165,7 +152,6 @@
             </a>
           </div>
 
-          <!-- Branch -->
           <div class="text-sm text-gray-500 flex items-start mb-2">
             <svg class="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400 mt-0.5" xmlns="http://www.w3.org/2000/svg"
               fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -175,7 +161,6 @@
             <span class="inline-block w-full">{{ project.branch || 'default branch' }}</span>
           </div>
 
-          <!-- Application URL if available -->
           <div v-if="project.applicationUrl" class="text-sm text-gray-500 flex items-start mb-2">
             <svg class="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400 mt-0.5" xmlns="http://www.w3.org/2000/svg"
               fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -188,16 +173,15 @@
             </a>
           </div>
 
-          <!-- Last Deployment Status if available -->
           <div v-if="projectDeployments[project.id]" class="mt-auto pt-3 border-t border-gray-100">
             <div class="flex items-center justify-between">
               <span class="text-xs font-medium text-gray-500">Last deployment:</span>
               <span :class="{
-            'px-2 inline-flex text-xs leading-5 font-semibold rounded-full': true,
-            'bg-green-100 text-green-800': projectDeployments[project.id].status === 'completed',
-            'bg-yellow-100 text-yellow-800': projectDeployments[project.id].status === 'pending' || projectDeployments[project.id].status === 'in_progress',
-            'bg-red-100 text-red-800': projectDeployments[project.id].status === 'failed'
-          }">
+                'px-2 inline-flex text-xs leading-5 font-semibold rounded-full': true,
+                'bg-green-100 text-green-800': projectDeployments[project.id].status === 'completed',
+                'bg-yellow-100 text-yellow-800': projectDeployments[project.id].status === 'pending' || projectDeployments[project.id].status === 'in_progress',
+                'bg-red-100 text-red-800': projectDeployments[project.id].status === 'failed'
+              }">
                 {{ projectDeployments[project.id].status }}
               </span>
             </div>
@@ -207,7 +191,6 @@
           </div>
         </div>
 
-        <!-- Card Footer -->
         <div class="border-t border-gray-200 px-5 py-4 flex justify-between items-center">
           <div>
             <span class="text-xs text-gray-500">Created: {{ new Date(project.createdAt).toLocaleDateString() }}</span>
@@ -226,7 +209,6 @@
       </div>
     </div>
 
-    <!-- Projects List View -->
     <div v-else-if="viewMode === 'list' && filteredProjects.length > 0"
       class="bg-white shadow overflow-hidden sm:rounded-lg">
       <table class="min-w-full divide-y divide-gray-200">
@@ -271,19 +253,19 @@
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm">
               <span :class="{
-            'px-2 inline-flex text-xs leading-5 font-semibold rounded-full': true,
-            'bg-green-100 text-green-800': project.active,
-            'bg-red-100 text-red-800': !project.active
-          }">
+                'px-2 inline-flex text-xs leading-5 font-semibold rounded-full': true,
+                'bg-green-100 text-green-800': project.active,
+                'bg-red-100 text-red-800': !project.active
+              }">
                 {{ project.active ? 'Active' : 'Inactive' }}
               </span>
               <div v-if="projectDeployments[project.id]" class="mt-1">
                 <span :class="{
-            'px-2 inline-flex text-xs leading-5 font-semibold rounded-full': true,
-            'bg-green-100 text-green-800': projectDeployments[project.id].status === 'completed',
-            'bg-yellow-100 text-yellow-800': projectDeployments[project.id].status === 'pending' || projectDeployments[project.id].status === 'in_progress',
-            'bg-red-100 text-red-800': projectDeployments[project.id].status === 'failed'
-          }">
+                  'px-2 inline-flex text-xs leading-5 font-semibold rounded-full': true,
+                  'bg-green-100 text-green-800': projectDeployments[project.id].status === 'completed',
+                  'bg-yellow-100 text-yellow-800': projectDeployments[project.id].status === 'pending' || projectDeployments[project.id].status === 'in_progress',
+                  'bg-red-100 text-red-800': projectDeployments[project.id].status === 'failed'
+                }">
                   Last: {{ projectDeployments[project.id].status }}
                 </span>
               </div>
@@ -317,16 +299,17 @@
 
 <script lang="ts" setup>
 import { ref, onMounted, computed } from 'vue'
-import { useApi } from '~/composables/useApi'
 import type { Project, Deployment } from '~/types'
 import { useToast } from '~/composables/useToast'
+import { useProjects } from '~/composables/useProjects'
+import { useDeployments } from '~/composables/useDeployments'
 
 enum ViewMode {
   Grid = 'grid',
   List = 'list',
 }
 
-const api = useApi()
+const { fetchProjects, fetchProjectDeployments, triggerDeploy: triggerDeployProject } = useProjects()
 const projects = ref<Project[]>([])
 const loading = ref(true)
 const projectDeployments = ref<Record<number, Deployment>>({})
@@ -339,7 +322,7 @@ const viewMode = ref(ViewMode.Grid)
 onMounted(async () => {
   try {
     projects.value = []
-    const fetchedProjects = await api.fetchProjects()
+    const fetchedProjects = await fetchProjects()
 
     if (Array.isArray(fetchedProjects)) {
       projects.value = fetchedProjects
@@ -347,7 +330,7 @@ onMounted(async () => {
       await Promise.all(
         fetchedProjects.map(async (project) => {
           try {
-            const deployments = await api.fetchProjectDeployments(project.id)
+            const deployments = await fetchProjectDeployments(project.id)
             if (deployments && deployments.length > 0) {
               const latestDeployment = deployments.sort((a, b) =>
                 new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime()
@@ -409,18 +392,14 @@ const resetFilters = () => {
 
 const toast = useToast()
 const triggerDeploy = async (projectId: number) => {
-  try {
-    const result = await api.triggerDeploy(projectId)
-    if (result) {
-      toast.success('Deployment triggered successfully!')
+  const result = await triggerDeployProject(projectId)
+  if (result) {
+    toast.success('Deployment triggered successfully!')
 
-      projectDeployments.value[projectId] = result
-    } else {
-      toast.error('Failed to trigger deployment', 'Please try again.')
-    }
-  } catch (error) {
-    console.error('Error triggering deployment:', error)
+    projectDeployments.value[projectId] = result
+  } else {
     toast.error('Failed to trigger deployment', 'Please try again.')
   }
+
 }
 </script>

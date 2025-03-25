@@ -1,28 +1,20 @@
-export default defineNuxtRouteMiddleware((to, from) => {
-  if (process.server) return;
-  
-  if (to.path.startsWith('/auth/')) return;
-  
-  const token = useCookie('token').value;
-  
-  if (!token) {
-    return navigateTo('/auth/login');
+import { navigateTo } from 'nuxt/app'
+import { useAuth } from '~/composables/useAuth'
+
+export default defineNuxtRouteMiddleware(async (to) => {
+  if (to.path.startsWith('/auth')) {
+    return
   }
-  
+
+  const { initAuth, isAuthenticated } = useAuth()
+
+  if (!isAuthenticated.value) {
+    return navigateTo('/auth/login')
+  }
+
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    const expiry = payload.exp * 1000;
-    
-    if (Date.now() >= expiry) {
-      useCookie('token').value = null;
-      useCookie('user').value = null;
-      return navigateTo('/auth/login');
-    }
-    
-    return true;
+    await initAuth()
   } catch (error) {
-    useCookie('token').value = null;
-    useCookie('user').value = null;
-    return navigateTo('/auth/login');
+    return navigateTo('/auth/login')
   }
-});
+})

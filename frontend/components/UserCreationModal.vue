@@ -79,7 +79,7 @@
 
 <script lang="ts" setup>
 import { ref } from 'vue'
-import { useApi } from '~/composables/useApi'
+import { useUsers } from '~/composables/useUsers'
 
 const props = defineProps<{
   isOpen: boolean
@@ -90,7 +90,7 @@ const emit = defineEmits<{
   (e: 'created'): void
 }>()
 
-const api = useApi()
+const { createUser } = useUsers()
 const isLoading = ref(false)
 const error = ref('')
 
@@ -109,12 +109,12 @@ const submitForm = async () => {
   error.value = ''
   isLoading.value = true
   
-  try {
-    await api.createUser({
-      email: formData.value.email,
-      password: formData.value.password
-    })
-    
+  const result = await createUser({
+    email: formData.value.email,
+    password: formData.value.password
+  })
+  
+  if (result) {
     formData.value = {
       email: '',
       password: '',
@@ -122,14 +122,10 @@ const submitForm = async () => {
     }
     
     emit('created')
-    
     emit('close')
-  } catch (err: any) {
-    console.error('Error creating user:', err)
-    error.value = err.data?.message || 'Failed to create user'
-  } finally {
-    isLoading.value = false
   }
+  
+  isLoading.value = false
 }
 
 const close = () => {

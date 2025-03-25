@@ -1,281 +1,142 @@
-import { useCookie, useRuntimeConfig } from 'nuxt/app'
-import type { Project, Deployment, Environment, User } from '~/types'
+import axios from 'axios'
+import type { AxiosInstance } from "axios";
+import { useCookie, useRuntimeConfig } from 'nuxt/app';
+
+export interface ConfigurationOptions {
+    basePath: string;
+}
+
+export const extractErrorMessage = (error: any) => {
+    if (error.response?.data?.message && Array.isArray(error.response?.data?.message)) {
+        return error.response?.data?.message.join('\n')
+    }
+    
+    return error.response?.data?.message || error.message || 'Unknown error'
+}
 
 export const useApi = () => {
-  const config = useRuntimeConfig()
-  const baseURL = config.public.apiURL
+    let isRefreshing = false
+    let failedQueue: Array<{
+        resolve: (token: string) => void
+        reject: (error: any) => void
+    }> = []
 
-  const getAuthHeaders = (): HeadersInit => {
-    const token = useCookie('token').value
-    return token ? { Authorization: `Bearer ${token}` } : {}
-  }
-
-  const fetchProjects = async (): Promise<Project[]> => {
-    try {
-      return await $fetch<Project[]>(`${baseURL}/projects`, {
-        headers: getAuthHeaders()
-      })
-    } catch (error) {
-      console.error('Error fetching projects:', error)
-      return []
+    const processQueue = (error: any, token: string | null = null) => {
+        failedQueue.forEach((prom) => {
+            if (error) {
+                prom.reject(error)
+            } else {
+                prom.resolve(token!)
+            }
+        })
+        failedQueue = []
     }
-  }
 
-  const fetchProject = async (id: number): Promise<Project | null> => {
-    try {
-      return await $fetch<Project>(`${baseURL}/projects/${id}`, {
-        headers: getAuthHeaders()
-      })
-    } catch (error) {
-      console.error(`Error fetching project ${id}:`, error)
-      return null
+    const runtimeConfig = useRuntimeConfig()
+    const axiosInstance: AxiosInstance = axios.create({
+        baseURL: (runtimeConfig.public.apiBaseUrl as string) || 'http://localhost:3000',
+        timeout: 10000,
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+
+    axiosInstance.interceptors.request.use(
+        (config) => {
+            const accessToken = useCookie('access_token').value
+            if (accessToken) {
+                config.headers['Authorization'] = `Bearer ${accessToken}`
+            }
+            return config
+        },
+        (error) => {
+            return Promise.reject(error)
+        }
+    )
+
+    axiosInstance.interceptors.response.use(
+        (response) => response,
+        async (error) => {
+            const originalRequest = error.config
+
+            if (originalRequest.url?.includes('/auth/login') ||
+                originalRequest.url?.includes('/auth/register') ||
+                originalRequest.url?.includes('/auth/token/refresh')) {
+                return Promise.reject(error)
+            }
+
+            if (originalRequest._retry || error.response?.status !== 401) {
+                return Promise.reject(error)
+            }
+
+            if (originalRequest.url === '/auth/token/refresh') {
+                useCookie('access_token').value = null
+                useCookie('refresh_token').value = null
+                if (import.meta.client) {
+                    window.location.reload()
+                }
+                return Promise.reject({
+                    message: 'Session expired. Please login again.'
+                })
+            }
+
+            if (isRefreshing) {
+                try {
+                    const token = await new Promise<string>((resolve, reject) => {
+                        failedQueue.push({ resolve, reject })
+                    })
+                    originalRequest.headers['Authorization'] = `Bearer ${token}`
+                    return axiosInstance(originalRequest)
+                } catch (err) {
+                    return Promise.reject(err)
+                }
+            }
+
+            originalRequest._retry = true
+            isRefreshing = true
+
+            try {
+                const refreshTokenValue = useCookie('refresh_token').value
+                if (!refreshTokenValue) {
+                    throw new Error('No refresh token available')
+                }
+
+                const response = await axiosInstance.post(
+                    '/auth/token/refresh',
+                    { refreshToken: refreshTokenValue }
+                )
+
+                const { data } = response
+                const newToken = data.accessToken
+
+                if (newToken) {
+                    useCookie('access_token').value = newToken
+                    if (data.refreshToken) {
+                        useCookie('refresh_token').value = data.refreshToken
+                    }
+
+                    originalRequest.headers['Authorization'] = `Bearer ${newToken}`
+                    processQueue(null, newToken)
+                    return axiosInstance(originalRequest)
+                }
+
+                throw new Error('Failed to refresh token')
+
+            } catch (refreshError: any) {
+                processQueue(refreshError, null)
+                return Promise.reject(refreshError)
+            } finally {
+                isRefreshing = false
+            }
+        }
+    )
+
+    const config = {
+        basePath: process.env.NUXT_PUBLIC_API_BASE_URL || 'http://localhost:3000'
+    } as ConfigurationOptions
+
+    return {
+        config,
+        axiosInstance
     }
-  }
-
-  const createProject = async (project: Partial<Project>): Promise<Project | null> => {
-    try {
-      return await $fetch<Project>(`${baseURL}/projects`, {
-        method: 'POST',
-        body: project,
-        headers: getAuthHeaders()
-      })
-    } catch (error) {
-      console.error('Error creating project:', error)
-      return null
-    }
-  }
-
-  const updateProject = async (id: number, project: Partial<Project>): Promise<Project | null> => {
-    try {
-      const { id: projectId, createdAt, updatedAt, applicationUrl, ...cleanedProject } = project;
-
-      return await $fetch<Project>(`${baseURL}/projects/${id}`, {
-        method: 'PATCH',
-        body: cleanedProject,
-        headers: getAuthHeaders()
-      })
-    } catch (error) {
-      console.error(`Error updating project ${id}:`, error)
-      return null
-    }
-  }
-
-  const fetchDeployments = async (): Promise<Deployment[]> => {
-    try {
-      return await $fetch<Deployment[]>(`${baseURL}/deployments`, {
-        headers: getAuthHeaders()
-      })
-    } catch (error) {
-      console.error('Error fetching deployments:', error)
-      return []
-    }
-  }
-
-  const fetchDeployment = async (id: number): Promise<Deployment | null> => {
-    try {
-      return await $fetch<Deployment>(`${baseURL}/deployments/${id}`, {
-        headers: getAuthHeaders()
-      })
-    } catch (error) {
-      console.error(`Error fetching deployment ${id}:`, error)
-      return null
-    }
-  }
-
-  const fetchProjectDeployments = async (projectId: number): Promise<Deployment[]> => {
-    try {
-      return await $fetch<Deployment[]>(`${baseURL}/deployments/project/${projectId}`, {
-        headers: getAuthHeaders()
-      })
-    } catch (error) {
-      console.error(`Error fetching deployments for project ${projectId}:`, error)
-      return []
-    }
-  }
-
-  const triggerDeploy = async (projectId: number): Promise<Deployment | null> => {
-    try {
-      return await $fetch<Deployment>(`${baseURL}/projects/${projectId}/deploy`, {
-        method: 'POST',
-        headers: getAuthHeaders()
-      })
-    } catch (error) {
-      console.error(`Error triggering deployment for project ${projectId}:`, error)
-      return null
-    }
-  }
-
-  const fetchEnvironments = async (projectId: number): Promise<Environment[]> => {
-    try {
-      return await $fetch<Environment[]>(`${baseURL}/environments/project/${projectId}`, {
-        headers: getAuthHeaders()
-      })
-    } catch (error) {
-      console.error(`Error fetching environments for project ${projectId}:`, error)
-      return []
-    }
-  }
-
-  const fetchEnvironment = async (id: number): Promise<Environment | null> => {
-    try {
-      return await $fetch<Environment>(`${baseURL}/environments/${id}`, {
-        headers: getAuthHeaders()
-      })
-    } catch (error) {
-      console.error(`Error fetching environment ${id}:`, error)
-      return null
-    }
-  }
-
-  const createEnvironment = async (environment: Environment): Promise<Environment | null> => {
-    try {
-      return await $fetch<Environment>(`${baseURL}/environments`, {
-        method: 'POST',
-        body: environment,
-        headers: getAuthHeaders()
-      })
-    } catch (error) {
-      console.error('Error creating environment:', error)
-      return null
-    }
-  }
-
-  const updateEnvironment = async (id: number, environment: Partial<Environment>): Promise<Environment | null> => {
-    try {
-      return await $fetch<Environment>(`${baseURL}/environments/${id}`, {
-        method: 'PATCH',
-        body: environment,
-        headers: getAuthHeaders()
-      })
-    } catch (error) {
-      console.error(`Error updating environment ${id}:`, error)
-      return null
-    }
-  }
-
-  const deleteEnvironment = async (id: number): Promise<boolean> => {
-    try {
-      await $fetch(`${baseURL}/environments/${id}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders()
-      })
-      return true
-    } catch (error) {
-      console.error(`Error deleting environment ${id}:`, error)
-      return false
-    }
-  }
-
-  const fetchProjectLogs = async (projectId: number): Promise<string[]> => {
-    try {
-      return await $fetch<string[]>(`${baseURL}/projects/${projectId}/logs`, {
-        headers: getAuthHeaders()
-      })
-    } catch (error) {
-      console.error(`Error fetching logs for project ${projectId}:`, error)
-      return ['']
-    }
-  }
-
-  const deleteProject = async (id: number): Promise<boolean> => {
-    try {
-      await $fetch(`${baseURL}/projects/${id}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders()
-      })
-      return true
-    } catch (error) {
-      console.error(`Error deleting project ${id}:`, error)
-      return false
-    }
-  }
-
-  const fetchUsers = async () => {
-    try {
-      return await $fetch(`${baseURL}/users`, {
-        headers: getAuthHeaders()
-      })
-    } catch (error) {
-      console.error('Error fetching users:', error)
-      throw error
-    }
-  }
-
-  const createUser = async (userData: { email: string; password: string }) => {
-    try {
-      return await $fetch(`${baseURL}/users`, {
-        method: 'POST',
-        body: userData,
-        headers: getAuthHeaders()
-      })
-    } catch (error) {
-      console.error('Error creating user:', error)
-      throw error
-    }
-  }
-
-  const updateUserRole = async (userId: number, role: string) => {
-    try {
-      return await $fetch(`${baseURL}/users/${userId}`, {
-        method: 'PATCH',
-        body: { role },
-        headers: getAuthHeaders()
-      })
-    } catch (error) {
-      console.error(`Error updating user ${userId}:`, error)
-      throw error
-    }
-  }
-
-  const updateUser = async (user: User) => {
-    try {
-      return await $fetch(`${baseURL}/users/${user.id}`, {
-        method: 'PATCH',
-        body: user,
-        headers: getAuthHeaders()
-      })
-    } catch (error) {
-      console.error(`Error updating user ${user.id}:`, error)
-      throw error
-    }
-  }
-
-  const deleteUser = async (userId: number) => {
-    try {
-      await $fetch(`${baseURL}/users/${userId}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders()
-      })
-      return true
-    } catch (error) {
-      console.error(`Error deleting user ${userId}:`, error)
-      throw error
-    }
-  }
-
-  return {
-    fetchProjects,
-    fetchProject,
-    createProject,
-    updateProject,
-    deleteProject,
-
-    fetchDeployments,
-    fetchDeployment,
-    fetchProjectDeployments,
-    fetchProjectLogs,
-    triggerDeploy,
-
-    fetchEnvironments,
-    fetchEnvironment,
-    createEnvironment,
-    updateEnvironment,
-    deleteEnvironment,
-
-    fetchUsers,
-    createUser,
-    updateUserRole,
-    updateUser,
-    deleteUser
-  }
 }

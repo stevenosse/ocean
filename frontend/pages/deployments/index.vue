@@ -152,10 +152,9 @@
 
 <script lang="ts" setup>
 import { ref, computed, onMounted } from 'vue'
-import { useApi } from '~/composables/useApi'
+import { useDeployments } from '~/composables/useDeployments'
 import type { Deployment } from '~/types'
 
-const api = useApi()
 const deployments = ref<Deployment[]>([])
 const loading = ref(true)
 
@@ -174,6 +173,8 @@ const filteredDeployments = computed(() => {
     return statusMatch && projectMatch && dateMatch
   })
 })
+
+const { fetchDeployments } = useDeployments()
 
 function isToday(date: Date): boolean {
   const today = new Date()
@@ -219,7 +220,7 @@ function formatTime(rawDate: string | undefined): string {
 async function refreshDeployments() {
   loading.value = true
   try {
-    deployments.value = await api.fetchDeployments()
+    deployments.value = await fetchDeployments()
   } catch (error) {
     console.error('Error refreshing deployments:', error)
   } finally {
@@ -230,12 +231,6 @@ async function refreshDeployments() {
 
 
 onMounted(async () => {
-  try {
-    deployments.value = await api.fetchDeployments()
-  } catch (error) {
-    console.error('Error fetching deployments:', error)
-  } finally {
-    loading.value = false
-  }
+  refreshDeployments()
 })
 </script>

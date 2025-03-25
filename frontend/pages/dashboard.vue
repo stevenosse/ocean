@@ -236,10 +236,12 @@
 
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue'
-import { useApi } from '~/composables/useApi'
 import type { Project, Deployment } from '~/types'
+import { useProjects } from '~/composables/useProjects'
+import { useDeployments } from '~/composables/useDeployments'
 
-const api = useApi()
+const { fetchProjects } = useProjects()
+const { fetchDeployments } = useDeployments()
 const projects = ref<Project[]>([])
 const recentDeployments = ref<Deployment[]>([])
 const deploymentsCount = ref<number>(0)
@@ -250,21 +252,19 @@ const successfulDeployments = ref<number>(0)
 const failedDeployments = ref<number>(0)
 
 onMounted(async () => {
-    try {
-        const [projectsData, deploymentsData] = await Promise.all([
-            api.fetchProjects(),
-            api.fetchDeployments()
-        ])
+    loading.value = true
+    
+    const [projectsData, deploymentsData] = await Promise.all([
+        fetchProjects(),
+        fetchDeployments()
+    ])
 
-        projects.value = projectsData
-        recentDeployments.value = deploymentsData.slice(0, 5)
-        successfulDeployments.value = deploymentsData.filter(d => d.status === 'completed').length
-        failedDeployments.value = deploymentsData.filter(d => d.status === 'failed').length
-        deploymentsCount.value = deploymentsData.length
-    } catch (error) {
-        console.error('Error fetching dashboard data:', error)
-    } finally {
-        loading.value = false
-    }
+    projects.value = projectsData
+    recentDeployments.value = deploymentsData.slice(0, 5)
+    successfulDeployments.value = deploymentsData.filter(d => d.status === 'completed').length
+    failedDeployments.value = deploymentsData.filter(d => d.status === 'failed').length
+    deploymentsCount.value = deploymentsData.length
+    
+    loading.value = false
 })
 </script>

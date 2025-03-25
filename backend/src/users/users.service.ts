@@ -58,4 +58,10 @@ export class UsersService {
       },
     });
   }
+
+  async remove(id: number) {
+    return this.prisma.user.delete({
+      where: { id },
+    });
+  }
 }

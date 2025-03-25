@@ -264,14 +264,14 @@
 <script lang="ts" setup>
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useApi } from '~/composables/useApi'
+import { useProjects } from '~/composables/useProjects'
 import { useToast } from '~/composables/useToast'
 import type { Project } from '~/types'
 
 const route = useRoute()
 const router = useRouter()
-const api = useApi()
 const toast = useToast()
+const { updateProject, fetchProject } = useProjects()
 
 const project = ref<Project | null>(null)
 const loading = ref(true)
@@ -286,7 +286,7 @@ onMounted(async () => {
   try {
     const id = Number(route.params.id)
     if (!isNaN(id)) {
-      project.value = await api.fetchProject(id)
+      project.value = await fetchProject(id)
     }
   } catch (error) {
     console.error('Error fetching project:', error)
@@ -348,7 +348,7 @@ const validateAndSaveProject = async () => {
   try {
     const id = Number(route.params.id)
     if (!isNaN(id)) {
-      const result = await api.updateProject(id, project.value)
+      const result = await updateProject(id, project.value)
       if (result) {
         toast.success('Project updated successfully', 'Your changes have been saved')
         router.push(`/projects/${id}`)
@@ -356,9 +356,6 @@ const validateAndSaveProject = async () => {
         toast.error('Failed to update project', 'Please try again.')
       }
     }
-  } catch (error) {
-    console.error('Error updating project:', error)
-    toast.error('Failed to update project', 'Please try again.')
   } finally {
     isSubmitting.value = false
   }

@@ -185,20 +185,20 @@
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { useApi } from '~/composables/useApi'
+import { useDeployments } from '~/composables/useDeployments'
 import type { Deployment } from '~/types'
 
 const route = useRoute()
-const api = useApi()
 const deployment = ref<Deployment | null>(null)
 const loading = ref(true)
+const { fetchDeployment } = useDeployments()
 
 const refreshDeployment = async () => {
   loading.value = true
   try {
     const id = Number(route.params.id)
     if (!isNaN(id)) {
-      deployment.value = await api.fetchDeployment(id)
+      deployment.value = await fetchDeployment(id)
     }
   } catch (error) {
     console.error('Error fetching deployment:', error)
@@ -211,7 +211,7 @@ onMounted(async () => {
   try {
     const id = Number(route.params.id)
     if (!isNaN(id)) {
-      deployment.value = await api.fetchDeployment(id)
+      deployment.value = await fetchDeployment(id)
     }
   } catch (error) {
     console.error('Error fetching deployment:', error)

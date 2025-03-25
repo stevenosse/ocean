@@ -70,7 +70,7 @@ async function login() {
 
   if (user) {
     if (user.value.forcePasswordChange) { router.push('/auth/change-password'); }
-    else { router.push('/projects'); }
+    else { router.push('/dashboard'); }
   }
 }
 </script>
