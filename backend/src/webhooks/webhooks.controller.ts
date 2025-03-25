@@ -12,6 +12,7 @@ export class WebhooksController {
     @Body() payload: any,
   ) {
     try {
+      console.log('Received webhook event:', event);
       if (event !== 'push') {
         return { message: `Ignoring event: ${event}` };
       }
