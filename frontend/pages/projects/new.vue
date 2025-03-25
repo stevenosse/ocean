@@ -198,7 +198,7 @@ import type { Project } from '~/types'
 const router = useRouter()
 const toast = useToast()
 const config = useRuntimeConfig()
-const baseURL = config.public.apiURL
+const baseURL = config.public.apiBaseUrl
 
 const { createProject } = useProjects()
 
