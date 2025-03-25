@@ -362,7 +362,7 @@ import { useToast } from '~/composables/useToast'
 import type { Project, Deployment } from '~/types'
 
 const route = useRoute()
-const { fetchProject, fetchProjectDeployments, triggerDeploy: apiTriggerDeploy } = useProjects()
+const { fetchProject, fetchProjectDeployments, triggerDeploy: apiTriggerDeploy, deleteProject: apiDeleteProject } = useProjects()
 const project = ref<Project | null>(null)
 const deployments = ref<Deployment[]>([])
 const loading = ref(true)
@@ -414,7 +414,7 @@ const deleteProject = async () => {
   isDeleting.value = true
 
   try {
-    const result = await fetchProject(project.value.id)
+    const result = await apiDeleteProject(project.value.id)
     if (result) {
       toast.success('Project deleted successfully!')
       router.push('/projects')

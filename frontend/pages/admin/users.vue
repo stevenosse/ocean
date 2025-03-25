@@ -442,16 +442,14 @@ const deleteUser = async () => {
 
   isDeletingUser.value = true;
   try {
-    await apiDeleteUser(selectedUser.value.id);
+    const response = await apiDeleteUser(selectedUser.value.id);
+    if (response) {
+      users.value = users.value.filter((u: User) => u.id !== selectedUser.value?.id);
+      applyFilters();
+      toast.success('Success', 'User deleted successfully');
+    }
 
-    users.value = users.value.filter((u: User) => u.id !== selectedUser.value?.id);
-    applyFilters();
-
-    toast.success('Success', 'User deleted successfully');
     closeDeleteModal();
-  } catch (err) {
-    console.error('Error deleting user:', err);
-    toast.error('Error', 'Failed to delete user');
   } finally {
     isDeletingUser.value = false;
   }

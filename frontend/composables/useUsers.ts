@@ -59,7 +59,6 @@ export const useUsers = () => {
           const response = await api.axiosInstance.delete(`/users/${userId}`)
           return response.data
         } catch (error: any) {
-          console.error(`Error deleting user ${userId}:`, error)
           const errorMessage = extractErrorMessage(error)
           toast.error(`Failed to delete user ${userId}: ${errorMessage}`)
           return false
