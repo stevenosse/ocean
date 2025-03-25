@@ -263,8 +263,6 @@ onMounted(async () => {
         successfulDeployments.value = deploymentsData.filter(d => d.status === 'completed').length
         failedDeployments.value = deploymentsData.filter(d => d.status === 'failed').length
         deploymentsCount.value = deploymentsData.length
-    } catch (error) {
-        console.error('Error fetching dashboard data:', error)
     } finally {
         loading.value = false
     }

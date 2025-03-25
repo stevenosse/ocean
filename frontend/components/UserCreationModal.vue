@@ -124,9 +124,6 @@ const submitForm = async () => {
     emit('created')
     
     emit('close')
-  } catch (err: any) {
-    console.error('Error creating user:', err)
-    error.value = err.data?.message || 'Failed to create user'
   } finally {
     isLoading.value = false
   }

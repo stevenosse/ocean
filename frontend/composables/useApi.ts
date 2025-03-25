@@ -6,51 +6,6 @@ export interface ConfigurationOptions {
     basePath: string;
 }
 
-export interface ApiError {
-    message: string;
-    code: string;
-    details?: any;
-}
-
-export const handleError = (err: any): ApiError => {
-    if (!err.response) {
-        return {
-            message: 'Network error. Please check your connection.',
-            code: 'NETWORK_ERROR'
-        }
-    }
-
-    const status = err.response.status
-    const data = err.response.data
-
-    switch (status) {
-        case 403:
-            return {
-                message: 'Access denied.',
-                code: 'ACCESS_DENIED',
-                details: data.message
-            }
-        case 404:
-            return {
-                message: 'Settings not found.',
-                code: 'NOT_FOUND',
-                details: data.message
-            }
-        case 422:
-            return {
-                message: data.message || 'Invalid settings.',
-                code: 'VALIDATION_ERROR',
-                details: data.errors
-            }
-        default:
-            return {
-                message: data.message || 'An unexpected error occurred.',
-                code: 'UNKNOWN_ERROR',
-                details: data.message
-            }
-    }
-}
-
 export const useApi = () => {
     let isRefreshing = false
     let failedQueue: Array<{

@@ -193,11 +193,11 @@
             <div class="flex items-center justify-between">
               <span class="text-xs font-medium text-gray-500">Last deployment:</span>
               <span :class="{
-            'px-2 inline-flex text-xs leading-5 font-semibold rounded-full': true,
-            'bg-green-100 text-green-800': projectDeployments[project.id].status === 'completed',
-            'bg-yellow-100 text-yellow-800': projectDeployments[project.id].status === 'pending' || projectDeployments[project.id].status === 'in_progress',
-            'bg-red-100 text-red-800': projectDeployments[project.id].status === 'failed'
-          }">
+                'px-2 inline-flex text-xs leading-5 font-semibold rounded-full': true,
+                'bg-green-100 text-green-800': projectDeployments[project.id].status === 'completed',
+                'bg-yellow-100 text-yellow-800': projectDeployments[project.id].status === 'pending' || projectDeployments[project.id].status === 'in_progress',
+                'bg-red-100 text-red-800': projectDeployments[project.id].status === 'failed'
+              }">
                 {{ projectDeployments[project.id].status }}
               </span>
             </div>
@@ -271,19 +271,19 @@
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm">
               <span :class="{
-            'px-2 inline-flex text-xs leading-5 font-semibold rounded-full': true,
-            'bg-green-100 text-green-800': project.active,
-            'bg-red-100 text-red-800': !project.active
-          }">
+                'px-2 inline-flex text-xs leading-5 font-semibold rounded-full': true,
+                'bg-green-100 text-green-800': project.active,
+                'bg-red-100 text-red-800': !project.active
+              }">
                 {{ project.active ? 'Active' : 'Inactive' }}
               </span>
               <div v-if="projectDeployments[project.id]" class="mt-1">
                 <span :class="{
-            'px-2 inline-flex text-xs leading-5 font-semibold rounded-full': true,
-            'bg-green-100 text-green-800': projectDeployments[project.id].status === 'completed',
-            'bg-yellow-100 text-yellow-800': projectDeployments[project.id].status === 'pending' || projectDeployments[project.id].status === 'in_progress',
-            'bg-red-100 text-red-800': projectDeployments[project.id].status === 'failed'
-          }">
+                  'px-2 inline-flex text-xs leading-5 font-semibold rounded-full': true,
+                  'bg-green-100 text-green-800': projectDeployments[project.id].status === 'completed',
+                  'bg-yellow-100 text-yellow-800': projectDeployments[project.id].status === 'pending' || projectDeployments[project.id].status === 'in_progress',
+                  'bg-red-100 text-red-800': projectDeployments[project.id].status === 'failed'
+                }">
                   Last: {{ projectDeployments[project.id].status }}
                 </span>
               </div>
@@ -410,18 +410,14 @@ const resetFilters = () => {
 
 const toast = useToast()
 const triggerDeploy = async (projectId: number) => {
-  try {
-    const result = await triggerDeployProject(projectId)
-    if (result) {
-      toast.success('Deployment triggered successfully!')
+  const result = await triggerDeployProject(projectId)
+  if (result) {
+    toast.success('Deployment triggered successfully!')
 
-      projectDeployments.value[projectId] = result
-    } else {
-      toast.error('Failed to trigger deployment', 'Please try again.')
-    }
-  } catch (error) {
-    console.error('Error triggering deployment:', error)
+    projectDeployments.value[projectId] = result
+  } else {
     toast.error('Failed to trigger deployment', 'Please try again.')
   }
+
 }
 </script>
