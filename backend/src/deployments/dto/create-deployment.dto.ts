@@ -1,4 +1,4 @@
-import { IsNumber, IsString, IsOptional } from 'class-validator';
+import { IsNumber, IsString, IsOptional, IsObject } from 'class-validator';
 
 export class CreateDeploymentDto {
   @IsNumber()
@@ -11,4 +11,8 @@ export class CreateDeploymentDto {
   @IsString()
   @IsOptional()
   commitMessage?: string;
+
+  @IsObject()
+  @IsOptional()
+  metadata?: Record<string, any>;
 }

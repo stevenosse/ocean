@@ -20,6 +20,7 @@ export interface Project {
   dockerServiceName?: string;
   active: boolean;
   webhookSecret?: string;
+  githubInstallationId?: number;
   buildCommand?: string;
   startCommand?: string;
   installCommand?: string;

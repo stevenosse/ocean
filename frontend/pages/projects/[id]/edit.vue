@@ -153,7 +153,7 @@
               </div>
 
               <!-- Output Directory Field -->
-              <div class="relative mb-6">
+              <div class="relative mb-3">
                 <label for="outputDirectory" class="block text-sm font-medium text-gray-700 mb-1">Output Directory</label>
                 <div class="relative">
                   <input 
@@ -168,54 +168,79 @@
               </div>
             </div>
 
-            <!-- Docker Configuration Section -->
+            <!-- Auto Deployment Configuration Section -->
             <div class="pt-2 pb-1">
-              <h3 class="text-lg font-medium text-gray-900 mb-4">Docker Configuration</h3>
+              <h3 class="text-lg font-medium text-gray-900 mb-4">Auto Deployment Configuration</h3>
               
-              <!-- Docker Compose File Field -->
-              <div class="relative mb-6">
-                <label for="dockerComposeFile" class="block text-sm font-medium text-gray-700 mb-1">Docker Compose File</label>
+              <!-- GitHub App Integration -->
+              <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+                <div class="flex">
+                  <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
+                  <div class="ml-3">
+                    <p class="text-sm text-blue-700">
+                      <strong>GitHub App Integration:</strong> To enable auto-deployments, install the Ocean GitHub App on your repository. 
+                      This will automatically set up webhooks and provide secure access for deployments.
+                    </p>
+                    <div class="mt-3 flex items-center">
+                      <button 
+                        type="button" 
+                        @click="openGitHubAppInstallation"
+                        class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        :disabled="checkingGithubApp || githubAppInstalled"
+                      >
+                        <svg class="-ml-0.5 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                        </svg>
+                        <span v-if="!checkingGithubApp && !githubAppInstalled">Install GitHub App</span>
+                        <span v-else-if="checkingGithubApp">Checking...</span>
+                        <span v-else>Already Installed</span>
+                      </button>
+                      
+                      <div v-if="checkingGithubApp" class="ml-3 flex items-center">
+                        <div class="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent"></div>
+                        <span class="ml-2 text-sm text-gray-600">Checking installation status...</span>
+                      </div>
+                      
+                      <div v-else-if="githubAppInstalled" class="ml-3 flex items-center text-green-600">
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                        </svg>
+                        <span class="ml-1 text-sm">GitHub App is installed</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="relative mb-3" v-if="project?.githubInstallationId">
+                <div class="flex items-center">
+                  <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
+                  <span class="ml-2 text-sm font-medium text-gray-700">GitHub App is installed and auto-deployments are enabled</span>
+                </div>
+                <p class="mt-2 text-sm text-gray-500">Installation ID: {{ project.githubInstallationId }}</p>
+              </div>
+              
+              <div class="relative mb-6" v-if="!project?.githubInstallationId">
+                <label for="webhookSecret" class="block text-sm font-medium text-gray-700 mb-1">Webhook Secret (Manual Setup)</label>
                 <div class="relative">
                   <input 
                     type="text" 
-                    id="dockerComposeFile" 
-                    v-model="project.dockerComposeFile" 
+                    id="webhookSecret" 
+                    v-model="project.webhookSecret" 
                     class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                    placeholder="docker-compose.yml"
+                    placeholder="Enter a secret key for webhook verification"
                   />
                 </div>
-                <p class="mt-2 text-sm text-gray-500">Path to docker-compose.yml (defaults to docker-compose.yml in the root)</p>
+                <p class="mt-2 text-sm text-gray-500">Secret key used to verify manual GitHub webhook requests (leave empty to disable verification)</p>
               </div>
-
-              <!-- Docker Service Name Field -->
-              <div class="relative">
-                <label for="dockerServiceName" class="block text-sm font-medium text-gray-700 mb-1">Docker Service Name</label>
-                <div class="relative">
-                  <input 
-                    type="text" 
-                    id="dockerServiceName" 
-                    v-model="project.dockerServiceName" 
-                    class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                    placeholder="app"
-                  />
-                </div>
-                <p class="mt-2 text-sm text-gray-500">The service name in docker-compose.yml to deploy</p>
-              </div>
-            </div>
-
-            <!-- Webhook Secret Field -->
-            <div class="relative">
-              <label for="webhookSecret" class="block text-sm font-medium text-gray-700 mb-1">Webhook Secret</label>
-              <div class="relative">
-                <input 
-                  type="text" 
-                  id="webhookSecret" 
-                  v-model="project.webhookSecret" 
-                  class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                  placeholder="Enter webhook secret"
-                />
-              </div>
-              <p class="mt-2 text-sm text-gray-500">Secret for webhook authentication (optional)</p>
             </div>
 
             <!-- Status Field -->
@@ -266,27 +291,46 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useProjects } from '~/composables/useProjects'
 import { useToast } from '~/composables/useToast'
+import { useGithub } from '~/composables/useGithub'
 import type { Project } from '~/types'
 
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
 const { updateProject, fetchProject } = useProjects()
+const { getInstallationUrl, checkGitHubAppInstallation, extractOwnerAndRepo } = useGithub()
 
 const project = ref<Project | null>(null)
 const loading = ref(true)
 const isSubmitting = ref(false)
+const checkingGithubApp = ref(false)
+const githubAppInstalled = ref(false)
 
 const errors = reactive({
   name: '',
   repositoryUrl: ''
 })
 
+// GitHub App installation URL
+const githubAppInstallUrl = ref('')
+
 onMounted(async () => {
   try {
     const id = Number(route.params.id)
     if (!isNaN(id)) {
       project.value = await fetchProject(id)
+      
+      // Fetch GitHub App installation URL
+      try {
+        githubAppInstallUrl.value = await getInstallationUrl()
+        
+        // Check GitHub App installation status if we have a repository URL
+        if (project.value?.repositoryUrl) {
+          await checkGitHubAppStatus()
+        }
+      } catch (err) {
+        console.error('Error fetching GitHub App installation URL:', err)
+      }
     }
   } catch (error) {
     console.error('Error fetching project:', error)
@@ -320,6 +364,9 @@ const validateField = (field: string) => {
       errors.repositoryUrl = 'Please enter a valid repository URL'
       return false
     } else {
+      // Check GitHub App installation status when repository URL changes
+      checkGitHubAppStatus()
+      
       errors.repositoryUrl = ''
       return true
     }
@@ -330,6 +377,38 @@ const validateField = (field: string) => {
 
 const isValidUrl = (url: string) => {
   return /^(https?:\/\/|git@)([\w.-]+)(\/|:)[\w.-]+\/[\w.-]+(\.[\w.-]+)?(\.git)?$/.test(url)
+}
+
+const checkGitHubAppStatus = async () => {
+  if (!project.value?.repositoryUrl) return;
+  
+  const repoInfo = extractOwnerAndRepo(project.value.repositoryUrl);
+  if (!repoInfo) return;
+  
+  checkingGithubApp.value = true;
+  try {
+    const { owner, repo } = repoInfo;
+    const status = await checkGitHubAppInstallation(owner, repo);
+    
+    githubAppInstalled.value = status.installed;
+    
+    // If app is installed but project doesn't have installation ID, update it
+    if (status.installed && status.installationId && !project.value.githubInstallationId) {
+      project.value.githubInstallationId = status.installationId;
+    }
+  } catch (err) {
+    console.error('Error checking GitHub App status:', err);
+  } finally {
+    checkingGithubApp.value = false;
+  }
+}
+
+const openGitHubAppInstallation = () => {
+  if (githubAppInstallUrl.value) {
+    window.open(githubAppInstallUrl.value, '_blank')
+  } else {
+    toast.error('GitHub App installation URL not available', 'Please try again later')
+  }
 }
 
 const validateAndSaveProject = async () => {

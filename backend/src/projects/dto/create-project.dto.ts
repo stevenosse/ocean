@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsBoolean, IsUrl } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsUrl, IsNumber } from 'class-validator';
 
 export class CreateProjectDto {
   @IsString()
@@ -26,6 +26,7 @@ export class CreateProjectDto {
   @IsOptional()
   webhookSecret: string;
 
+  @IsNumber()
   @IsOptional()
   githubInstallationId: number;
 

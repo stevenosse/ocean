@@ -249,20 +249,6 @@
                   {{ project.outputDirectory || 'dist' }}
                 </dd>
               </div>
-              <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt class="text-sm font-medium text-gray-500">Docker Compose File</dt>
-                <dd class="mt-1 text-sm sm:mt-0 sm:col-span-2"
-                  :class="project.dockerComposeFile ? 'text-gray-900' : 'text-gray-500'">
-                  {{ project.dockerComposeFile || 'Default (docker-compose.yml)' }}
-                </dd>
-              </div>
-              <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt class="text-sm font-medium text-gray-500">Docker Service Name</dt>
-                <dd class="mt-1 text-sm sm:mt-0 sm:col-span-2"
-                  :class="project.dockerServiceName ? 'text-gray-900' : 'text-gray-500'">
-                  {{ project.dockerServiceName || 'Not specified' }}
-                </dd>
-              </div>
             </dl>
           </div>
         </div>

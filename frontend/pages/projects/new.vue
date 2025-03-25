@@ -121,36 +121,6 @@
               </div>
             </div>
 
-            <!-- Docker Configuration Section -->
-            <div class="pt-2 pb-1">
-              <h3 class="text-lg font-medium text-gray-900 mb-4">Docker Configuration</h3>
-
-              <!-- Docker Compose File Field -->
-              <div class="relative mb-6">
-                <label for="dockerComposeFile" class="block text-sm font-medium text-gray-700 mb-1">Docker Compose
-                  File</label>
-                <div class="relative">
-                  <input type="text" id="dockerComposeFile" v-model="project.dockerComposeFile"
-                    class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                    placeholder="docker-compose.yml" />
-                </div>
-                <p class="mt-2 text-sm text-gray-500">Path to docker-compose.yml (defaults to docker-compose.yml in the
-                  root)</p>
-              </div>
-
-              <!-- Docker Service Name Field -->
-              <div class="relative">
-                <label for="dockerServiceName" class="block text-sm font-medium text-gray-700 mb-1">Docker Service
-                  Name</label>
-                <div class="relative">
-                  <input type="text" id="dockerServiceName" v-model="project.dockerServiceName"
-                    class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                    placeholder="app" />
-                </div>
-                <p class="mt-2 text-sm text-gray-500">The service name in docker-compose.yml to deploy</p>
-              </div>
-            </div>
-
             <!-- Webhook Secret Field -->
             <div class="relative">
               <label for="webhookSecret" class="block text-sm font-medium text-gray-700 mb-1">Webhook Secret</label>

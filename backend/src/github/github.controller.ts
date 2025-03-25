@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Redirect } from '@nestjs/common';
+import { Controller, Get, Query, Redirect, HttpCode, HttpStatus } from '@nestjs/common';
 import { GithubService } from './github.service';
 import { ProjectsService } from '../projects/projects.service';
 
@@ -44,5 +44,33 @@ export class GithubController {
     await this.projectsService.update(+projectId, { githubInstallationId: +installationId });
 
     return { url: `/projects/${projectId}`, statusCode: 302 };
+  }
+  
+  @Get('installation-url')
+  @HttpCode(HttpStatus.OK)
+  async getInstallationUrl() {
+    const baseUrl = this.githubService.getInstallationUrl();
+    return { url: baseUrl };
+  }
+  
+  @Get('installation-status')
+  @HttpCode(HttpStatus.OK)
+  async getInstallationStatus(
+    @Query('owner') owner: string,
+    @Query('repo') repo: string
+  ) {
+    if (!owner || !repo) {
+      return { installed: false };
+    }
+    
+    try {
+      const installationId = await this.githubService.getInstallationId(owner, repo);
+      return {
+        installed: !!installationId,
+        installationId: installationId || undefined
+      };
+    } catch (error) {
+      return { installed: false };
+    }
   }
 }
