@@ -129,8 +129,8 @@ export class DeploymentWorkerService {
         await this.updateDeploymentLogs(deployment.id, logs);
       }
 
-      const { stdout: commitInfo } = await execAsync(`cd ${repoDir} && git log -1 --pretty=format:"%H %s"`);
-      const [commitHash, commitMessage] = commitInfo.split(' ', 2);
+      const { stdout: commitInfo } = await execAsync(`cd ${repoDir} && git log -1 --pretty=format:"%H|||%s"`);
+      const [commitHash, commitMessage] = commitInfo.split('|||', 2);
       await this.prisma.deployment.update({
         where: { id: deployment.id },
         data: {
