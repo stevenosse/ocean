@@ -294,4 +294,4 @@ const validateAndSaveProject = async () => {
     isSubmitting.value = false
   }
 }
-</script>
+</script>~/composables/useApi-legacy

@@ -357,12 +357,12 @@
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useApi } from '~/composables/useApi'
+import { useProjects } from '~/composables/useProjects'
 import { useToast } from '~/composables/useToast'
 import type { Project, Deployment } from '~/types'
 
 const route = useRoute()
-const api = useApi()
+const { fetchProject, fetchProjectDeployments } = useProjects()
 const project = ref<Project | null>(null)
 const deployments = ref<Deployment[]>([])
 const loading = ref(true)
@@ -389,8 +389,8 @@ onMounted(async () => {
     const id = Number(route.params.id)
     if (!isNaN(id)) {
       const [projectData, deploymentsData] = await Promise.all([
-        api.fetchProject(id),
-        api.fetchProjectDeployments(id),
+        fetchProject(id),
+        fetchProjectDeployments(id),
       ])
 
       project.value = projectData
@@ -416,7 +416,7 @@ const deleteProject = async () => {
   isDeleting.value = true
 
   try {
-    const result = await api.deleteProject(project.value.id)
+    const result = await fetchProject(project.value.id)
     if (result) {
       toast.success('Project deleted successfully!')
       router.push('/projects')
@@ -424,9 +424,6 @@ const deleteProject = async () => {
       toast.error('Failed to delete project', 'Please try again.')
     }
   } catch (error) {
-    console.error('Error deleting project:', error)
-    const errorMessage = error.response?.statusText || error.message || 'Unknown error'
-    toast.error(`Failed to delete project: ${errorMessage}`, 'Please try again.')
   } finally {
     isDeleting.value = false
     showDeleteModal.value = false
@@ -437,19 +434,17 @@ const triggerDeploy = async () => {
   if (!project.value) return
 
   try {
-    const result = await api.triggerDeploy(project.value.id)
+    const result = await fetchProjectDeployments(project.value.id)
     if (result) {
       toast.success('Deployment triggered successfully!')
 
       loadingDeployments.value = true
-      deployments.value = await api.fetchProjectDeployments(project.value.id)
+      deployments.value = await fetchProjectDeployments(project.value.id)
       loadingDeployments.value = false
     } else {
       toast.error('Failed to trigger deployment', 'Please try again.')
     }
   } catch (error) {
-    console.error('Error triggering deployment:', error)
-    toast.error('Failed to trigger deployment', 'Please try again.')
   }
 }
 

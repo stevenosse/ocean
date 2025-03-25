@@ -69,7 +69,7 @@ async function register() {
 
   if (user) {
     if (user.forcePasswordChange) { router.push('/auth/change-password'); }
-    else { router.push('/projects'); }
+    else { router.push('/dashboard'); }
   }
 }
 </script>

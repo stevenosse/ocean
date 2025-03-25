@@ -1,24 +1,32 @@
-import { useRuntimeConfig, useCookie, navigateTo } from 'nuxt/app'
-import { ref, computed } from 'vue'
+import { useCookie, navigateTo } from 'nuxt/app'
+import { ref } from 'vue'
 import { AuthResponse, User } from '~/types/user'
+import { useApi } from './useApi'
 
 export const useAuth = () => {
   const error = ref('')
   const isLoading = ref(false)
   const user = ref<User | null>(null)
-  const apiURL = useRuntimeConfig().public.apiURL
-  const isAuthenticated = computed(() => !!user.value)
-  const tokenCookie = useCookie('token', { secure: true, sameSite: 'strict' })
-  const userCookie = useCookie('user', { secure: true, sameSite: 'strict' })
+  const isAuthenticated = ref(false)
+  const tokenCookie = useCookie('access_token', { secure: true, sameSite: 'strict', maxAge: 60 * 60 * 24 })
+  const userCookie = useCookie('user', { secure: true, sameSite: 'strict', maxAge: 60 * 60 * 24 })
+  const api = useApi()
 
-  if (userCookie.value) {
-    try {
-      user.value = typeof userCookie.value === 'string'
-        ? JSON.parse(userCookie.value)
-        : userCookie.value
-    } catch (e) {
-      console.error('Failed to parse stored user:', e)
-      userCookie.value = null
+  const initAuth = () => {
+    if (tokenCookie.value && userCookie.value) {
+      isAuthenticated.value = true
+    }
+
+    if (userCookie.value) {
+      try {
+        user.value = typeof userCookie.value === 'string'
+          ? JSON.parse(userCookie.value)
+          : userCookie.value
+        isAuthenticated.value = true
+      } catch (e) {
+        console.error('Failed to parse stored user:', e)
+        userCookie.value = null
+      }
     }
   }
 
@@ -27,16 +35,16 @@ export const useAuth = () => {
     isLoading.value = true
 
     try {
-      const response = await $fetch<AuthResponse>(`${apiURL}/auth/login`, {
-        method: 'POST',
-        body: { email, password }
+      const response = await api.axiosInstance.post<AuthResponse>('/auth/login', {
+        email,
+        password
       })
 
-      tokenCookie.value = response.access_token
-      userCookie.value = JSON.stringify(response.user)
+      tokenCookie.value = response.data.access_token
+      userCookie.value = JSON.stringify(response.data.user)
 
-      user.value = response.user
-
+      user.value = response.data.user
+      isAuthenticated.value = true
       return user;
     } catch (e: any) {
       console.error('Login error:', e)
@@ -52,19 +60,16 @@ export const useAuth = () => {
     isLoading.value = true
 
     try {
-      const config = useRuntimeConfig()
-      const baseURL = config.public.apiURL
-
-      const response = await $fetch<AuthResponse>(`${baseURL}/auth/register`, {
-        method: 'POST',
-        body: { email, password }
+      const response = await api.axiosInstance.post<AuthResponse>('/auth/register', {
+        email,
+        password
       })
 
-      tokenCookie.value = response.access_token
-      userCookie.value = JSON.stringify(response.user)
+      tokenCookie.value = response.data.access_token
+      userCookie.value = JSON.stringify(response.data.user)
 
-      user.value = response.user
-
+      user.value = response.data.user
+      isAuthenticated.value = true
       return user.value
     } catch (e: any) {
       console.error('Registration error:', e)
@@ -80,6 +85,7 @@ export const useAuth = () => {
     userCookie.value = null
 
     user.value = null
+    isAuthenticated.value = false
 
     return navigateTo('/auth/login')
   }
@@ -89,20 +95,14 @@ export const useAuth = () => {
     isLoading.value = true;
 
     try {
-      const config = useRuntimeConfig();
-      const baseURL = config.public.apiURL;
+      const response = await api.axiosInstance.post<AuthResponse>('/auth/change-password', {
+        currentPassword,
+        newPassword
+      })
 
-      const response = await $fetch(`${baseURL}/auth/change-password`, {
-        method: 'POST',
-        body: { currentPassword, newPassword },
-        headers: {
-          Authorization: `Bearer ${tokenCookie.value}`,
-        }
-      });
-
-      if (response.user) {
-        user.value = response.user;
-        userCookie.value = JSON.stringify(response.user);
+      if (response.data.user) {
+        user.value = response.data.user;
+        userCookie.value = JSON.stringify(response.data.user);
       }
 
       return true;
@@ -116,6 +116,7 @@ export const useAuth = () => {
   };
 
   return {
+    initAuth,
     user,
     error,
     isLoading,

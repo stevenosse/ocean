@@ -55,9 +55,14 @@
 <script setup>
 import { useAuth } from '~/composables/useAuth';
 import { useRoute } from 'vue-router';
+import { onMounted } from 'vue';
 
 const route = useRoute();
-const { user, isAuthenticated, logout } = useAuth();
+const { user, isAuthenticated, logout, initAuth } = useAuth();
+
+onMounted(() => {
+  initAuth();
+});
 
 const isActive = (path) => {
   return route.path === path || (path !== '/' && route.path.startsWith(path));

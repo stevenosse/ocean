@@ -319,4 +319,4 @@ const formatDate = (dateString) => {
 onMounted(() => {
   fetchUsers();
 });
-</script>
+</script>~/composables/useApi-legacy

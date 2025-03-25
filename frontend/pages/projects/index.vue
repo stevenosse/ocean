@@ -317,16 +317,17 @@
 
 <script lang="ts" setup>
 import { ref, onMounted, computed } from 'vue'
-import { useApi } from '~/composables/useApi'
 import type { Project, Deployment } from '~/types'
 import { useToast } from '~/composables/useToast'
+import { useProjects } from '~/composables/useProjects'
+import { useDeployments } from '~/composables/useDeployments'
 
 enum ViewMode {
   Grid = 'grid',
   List = 'list',
 }
 
-const api = useApi()
+const { fetchProjects, fetchProjectDeployments, triggerDeploy: triggerDeployProject } = useProjects()
 const projects = ref<Project[]>([])
 const loading = ref(true)
 const projectDeployments = ref<Record<number, Deployment>>({})
@@ -339,7 +340,7 @@ const viewMode = ref(ViewMode.Grid)
 onMounted(async () => {
   try {
     projects.value = []
-    const fetchedProjects = await api.fetchProjects()
+    const fetchedProjects = await fetchProjects()
 
     if (Array.isArray(fetchedProjects)) {
       projects.value = fetchedProjects
@@ -347,7 +348,7 @@ onMounted(async () => {
       await Promise.all(
         fetchedProjects.map(async (project) => {
           try {
-            const deployments = await api.fetchProjectDeployments(project.id)
+            const deployments = await fetchProjectDeployments(project.id)
             if (deployments && deployments.length > 0) {
               const latestDeployment = deployments.sort((a, b) =>
                 new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime()
@@ -410,7 +411,7 @@ const resetFilters = () => {
 const toast = useToast()
 const triggerDeploy = async (projectId: number) => {
   try {
-    const result = await api.triggerDeploy(projectId)
+    const result = await triggerDeployProject(projectId)
     if (result) {
       toast.success('Deployment triggered successfully!')
 
@@ -423,4 +424,4 @@ const triggerDeploy = async (projectId: number) => {
     toast.error('Failed to trigger deployment', 'Please try again.')
   }
 }
-</script>
+</script>~/composables/useApi-legacy

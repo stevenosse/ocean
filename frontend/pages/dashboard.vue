@@ -236,10 +236,12 @@
 
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue'
-import { useApi } from '~/composables/useApi'
 import type { Project, Deployment } from '~/types'
+import { useProjects } from '~/composables/useProjects'
+import { useDeployments } from '~/composables/useDeployments'
 
-const api = useApi()
+const { fetchProjects } = useProjects()
+const { fetchDeployments } = useDeployments()
 const projects = ref<Project[]>([])
 const recentDeployments = ref<Deployment[]>([])
 const deploymentsCount = ref<number>(0)
@@ -252,8 +254,8 @@ const failedDeployments = ref<number>(0)
 onMounted(async () => {
     try {
         const [projectsData, deploymentsData] = await Promise.all([
-            api.fetchProjects(),
-            api.fetchDeployments()
+            fetchProjects(),
+            fetchDeployments()
         ])
 
         projects.value = projectsData

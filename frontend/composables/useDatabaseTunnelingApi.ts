@@ -1,5 +1,6 @@
-import { useRuntimeConfig, useCookie } from 'nuxt/app'
+import { useCookie } from 'nuxt/app'
 import { useToast } from './useToast'
+import { useApi } from './useApi'
 
 export interface TunnelConnectionStringResponse {
   tunnelConnectionString: string | null
@@ -10,15 +11,9 @@ export interface TunnelStatusResponse {
 }
 
 export const useDatabaseTunnelingApi = () => {
-  const config = useRuntimeConfig()
-  const baseURL = config.public.apiURL
+  const api = useApi()
   const toast = useToast()
 
-  const getAuthHeaders = (): HeadersInit => {
-    const token = useCookie('token').value
-    return token ? { Authorization: `Bearer ${token}` } : {}
-  }
-  
   /**
    * Gets the connection string for a database
    * This will automatically create a tunnel if needed
@@ -27,12 +22,11 @@ export const useDatabaseTunnelingApi = () => {
    */
   const getConnectionString = async (databaseId: number): Promise<string | null> => {
     try {
-      const response = await $fetch<{ connectionString: string }>(
-        `${baseURL}/database/${databaseId}/connection-string`,
-        { headers: getAuthHeaders() }
+      const response = await api.axiosInstance.get<TunnelConnectionStringResponse>(
+        `/database/${databaseId}/connection-string`,
       )
-      
-      return response.connectionString
+
+      return response.data.tunnelConnectionString
     } catch (error: any) {
       console.error(`Error getting connection string for database ${databaseId}:`, error)
       const errorMessage = error.response?.statusText || error.message || 'Unknown error'
@@ -44,15 +38,12 @@ export const useDatabaseTunnelingApi = () => {
   const createTunnel = async (databaseId: number, localPort?: number): Promise<string | null> => {
     try {
       const url = localPort
-        ? `${baseURL}/database/${databaseId}/tunnel?localPort=${localPort}`
-        : `${baseURL}/database/${databaseId}/tunnel`
-      
-      const response = await $fetch<TunnelConnectionStringResponse>(url, {
-        method: 'POST',
-        headers: getAuthHeaders()
-      })
-      
-      return response.tunnelConnectionString
+        ? `/database/${databaseId}/tunnel?localPort=${localPort}`
+        : `/database/${databaseId}/tunnel`
+
+      const response = await api.axiosInstance.post<TunnelConnectionStringResponse>(url)
+
+      return response.data.tunnelConnectionString
     } catch (error: any) {
       console.error(`Error creating tunnel for database ${databaseId}:`, error)
       const errorMessage = error.response?.statusText || error.message || 'Unknown error'
@@ -63,10 +54,7 @@ export const useDatabaseTunnelingApi = () => {
 
   const stopTunnel = async (databaseId: number): Promise<boolean> => {
     try {
-      await $fetch(`${baseURL}/database/${databaseId}/tunnel`, {
-        method: 'DELETE',
-        headers: getAuthHeaders()
-      })
+      await api.axiosInstance.delete(`/database/${databaseId}/tunnel`)
       return true
     } catch (error: any) {
       console.error(`Error stopping tunnel for database ${databaseId}:`, error)
@@ -78,10 +66,8 @@ export const useDatabaseTunnelingApi = () => {
 
   const getTunnelConnectionString = async (databaseId: number): Promise<string | null> => {
     try {
-      const response = await $fetch<TunnelConnectionStringResponse>(`${baseURL}/database/${databaseId}/tunnel`, {
-        headers: getAuthHeaders()
-      })
-      return response.tunnelConnectionString
+      const response = await api.axiosInstance.get<TunnelConnectionStringResponse>(`/database/${databaseId}/tunnel`)
+      return response.data.tunnelConnectionString
     } catch (error: any) {
       console.error(`Error fetching tunnel connection string for database ${databaseId}:`, error)
       const errorMessage = error.response?.statusText || error.message || 'Unknown error'
@@ -92,10 +78,8 @@ export const useDatabaseTunnelingApi = () => {
 
   const isTunnelActive = async (databaseId: number): Promise<boolean> => {
     try {
-      const response = await $fetch<TunnelStatusResponse>(`${baseURL}/database/${databaseId}/tunnel/status`, {
-        headers: getAuthHeaders()
-      })
-      return response.isActive
+      const response = await api.axiosInstance.get<TunnelStatusResponse>(`/database/${databaseId}/tunnel/status`)
+      return response.data.isActive
     } catch (error: any) {
       console.error(`Error checking tunnel status for database ${databaseId}:`, error)
       const errorMessage = error.response?.statusText || error.message || 'Unknown error'
@@ -107,15 +91,12 @@ export const useDatabaseTunnelingApi = () => {
   const restartTunnel = async (databaseId: number, localPort?: number): Promise<string | null> => {
     try {
       const url = localPort
-        ? `${baseURL}/database/${databaseId}/tunnel/restart?localPort=${localPort}`
-        : `${baseURL}/database/${databaseId}/tunnel/restart`
-      
-      const response = await $fetch<TunnelConnectionStringResponse>(url, {
-        method: 'POST',
-        headers: getAuthHeaders()
-      })
-      
-      return response.tunnelConnectionString
+        ? `/database/${databaseId}/tunnel/restart?localPort=${localPort}`
+        : `/database/${databaseId}/tunnel/restart`
+
+      const response = await api.axiosInstance.post<TunnelConnectionStringResponse>(url)
+
+      return response.data.tunnelConnectionString
     } catch (error: any) {
       console.error(`Error restarting tunnel for database ${databaseId}:`, error)
       const errorMessage = error.response?.statusText || error.message || 'Unknown error'
