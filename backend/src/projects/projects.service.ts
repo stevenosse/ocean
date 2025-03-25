@@ -115,6 +115,9 @@ export class ProjectsService {
       await prisma.managedDatabase.deleteMany({
         where: { projectId: id }
       });
+
+      await this.tunnelingService.stopTunnel(id);
+
       await prisma.project.delete({
         where: { id }
       });
