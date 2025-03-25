@@ -398,8 +398,6 @@ onMounted(async () => {
     } else {
       console.error('Invalid project ID')
     }
-  } catch (error) {
-    console.error('Error fetching project data:', error)
   } finally {
     loading.value = false
     loadingDeployments.value = false
@@ -423,7 +421,6 @@ const deleteProject = async () => {
     } else {
       toast.error('Failed to delete project', 'Please try again.')
     }
-  } catch (error) {
   } finally {
     isDeleting.value = false
     showDeleteModal.value = false
@@ -444,7 +441,7 @@ const triggerDeploy = async () => {
     } else {
       toast.error('Failed to trigger deployment', 'Please try again.')
     }
-  } catch (error) {
+  } finally {
   }
 }
 

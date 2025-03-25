@@ -356,9 +356,6 @@ const validateAndSaveProject = async () => {
         toast.error('Failed to update project', 'Please try again.')
       }
     }
-  } catch (error) {
-    console.error('Error updating project:', error)
-    toast.error('Failed to update project', 'Please try again.')
   } finally {
     isSubmitting.value = false
   }

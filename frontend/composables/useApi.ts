@@ -6,6 +6,14 @@ export interface ConfigurationOptions {
     basePath: string;
 }
 
+export const extractErrorMessage = (error: any) => {
+    if (error.response?.data?.message && Array.isArray(error.response?.data?.message)) {
+        return error.response?.data?.message.join('\n')
+    }
+    
+    return error.response?.data?.message || error.message || 'Unknown error'
+}
+
 export const useApi = () => {
     let isRefreshing = false
     let failedQueue: Array<{

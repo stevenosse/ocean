@@ -194,13 +194,10 @@ const isDeletingUser = ref(false);
 
 const fetchUsers = async () => {
   loadingUsers.value = true;
-  try {
-    const response = await apiFetchUsers();
-    users.value = response;
-    filterUsers();
-  } finally {
-    loadingUsers.value = false;
-  }
+  const response = await apiFetchUsers();
+  users.value = response;
+  filterUsers();
+  loadingUsers.value = false;
 };
 
 const filterUsers = () => {
@@ -236,23 +233,20 @@ const updateUserRole = async () => {
   if (!selectedUser.value) return;
 
   isUpdatingRole.value = true;
-  try {
-    await apiUpdateUserRole(selectedUser.value.id, selectedRole.value);
-
+  const result = await apiUpdateUserRole(selectedUser.value.id, selectedRole.value);
+  
+  if (result) {
     const userIndex = users.value.findIndex(u => u.id === selectedUser.value.id);
     if (userIndex !== -1) {
       users.value[userIndex].role = selectedRole.value;
     }
 
-    toast.success('Success', 'User role updated successfully');
+    toast.success('User role updated successfully');
     closeRoleEditModal();
     filterUsers();
-  } catch (err) {
-    console.error('Error updating user role:', err);
-    toast.error('Error', 'Failed to update user role');
-  } finally {
-    isUpdatingRole.value = false;
   }
+  
+  isUpdatingRole.value = false;
 };
 
 const confirmDeleteUser = (user) => {
@@ -269,20 +263,17 @@ const deleteUser = async () => {
   if (!selectedUser.value) return;
 
   isDeletingUser.value = true;
-  try {
-    await apiDeleteUser(selectedUser.value.id);
-
+  const result = await apiDeleteUser(selectedUser.value.id);
+  
+  if (result) {
     users.value = users.value.filter(u => u.id !== selectedUser.value.id);
     filterUsers();
 
-    toast.success('Success', 'User deleted successfully');
+    toast.success('User deleted successfully');
     closeDeleteModal();
-  } catch (err) {
-    console.error('Error deleting user:', err);
-    toast.error('Error', 'Failed to delete user');
-  } finally {
-    isDeletingUser.value = false;
   }
+  
+  isDeletingUser.value = false;
 };
 
 const formatDate = (dateString) => {

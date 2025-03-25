@@ -1,6 +1,6 @@
 import { useCookie } from 'nuxt/app'
 import { useToast } from './useToast'
-import { useApi } from './useApi'
+import { extractErrorMessage, useApi } from './useApi'
 
 export interface TunnelConnectionStringResponse {
   tunnelConnectionString: string | null
@@ -29,7 +29,7 @@ export const useDatabaseTunnelingApi = () => {
       return response.data.tunnelConnectionString
     } catch (error: any) {
       console.error(`Error getting connection string for database ${databaseId}:`, error)
-      const errorMessage = error.response?.statusText || error.message || 'Unknown error'
+      const errorMessage = extractErrorMessage(error)
       toast.error(`Failed to get database connection string: ${errorMessage}`)
       return null
     }
@@ -46,7 +46,7 @@ export const useDatabaseTunnelingApi = () => {
       return response.data.tunnelConnectionString
     } catch (error: any) {
       console.error(`Error creating tunnel for database ${databaseId}:`, error)
-      const errorMessage = error.response?.statusText || error.message || 'Unknown error'
+      const errorMessage = extractErrorMessage(error)
       toast.error(`Failed to create database tunnel: ${errorMessage}`)
       return null
     }
@@ -58,7 +58,7 @@ export const useDatabaseTunnelingApi = () => {
       return true
     } catch (error: any) {
       console.error(`Error stopping tunnel for database ${databaseId}:`, error)
-      const errorMessage = error.response?.statusText || error.message || 'Unknown error'
+      const errorMessage = extractErrorMessage(error)
       toast.error(`Failed to stop database tunnel: ${errorMessage}`)
       return false
     }
@@ -70,7 +70,7 @@ export const useDatabaseTunnelingApi = () => {
       return response.data.tunnelConnectionString
     } catch (error: any) {
       console.error(`Error fetching tunnel connection string for database ${databaseId}:`, error)
-      const errorMessage = error.response?.statusText || error.message || 'Unknown error'
+      const errorMessage = extractErrorMessage(error)
       toast.error(`Failed to get tunnel connection string: ${errorMessage}`)
       return null
     }
@@ -82,7 +82,7 @@ export const useDatabaseTunnelingApi = () => {
       return response.data.isActive
     } catch (error: any) {
       console.error(`Error checking tunnel status for database ${databaseId}:`, error)
-      const errorMessage = error.response?.statusText || error.message || 'Unknown error'
+      const errorMessage = extractErrorMessage(error)
       toast.error(`Failed to check tunnel status: ${errorMessage}`)
       return false
     }
@@ -99,7 +99,7 @@ export const useDatabaseTunnelingApi = () => {
       return response.data.tunnelConnectionString
     } catch (error: any) {
       console.error(`Error restarting tunnel for database ${databaseId}:`, error)
-      const errorMessage = error.response?.statusText || error.message || 'Unknown error'
+      const errorMessage = extractErrorMessage(error)
       toast.error(`Failed to restart database tunnel: ${errorMessage}`)
       return null
     }

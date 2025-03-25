@@ -1,4 +1,4 @@
-import { useApi } from './useApi'
+import { extractErrorMessage, useApi } from './useApi'
 import { useToast } from './useToast'
 import type { Deployment, Environment, Project } from '~/types'
 
@@ -13,7 +13,7 @@ export const useProjects = () => {
             return response.data
         } catch (error: any) {
             console.error('Error fetching projects:', error)
-            const errorMessage = error.response?.statusText || error.message || 'Unknown error'
+            const errorMessage = extractErrorMessage(error)
             toast.error(`Failed to load projects: ${errorMessage}`)
             return []
         }
@@ -25,7 +25,7 @@ export const useProjects = () => {
             return response.data
         } catch (error: any) {
             console.error(`Error fetching project ${id}:`, error)
-            const errorMessage = error.response?.statusText || error.message || 'Unknown error'
+            const errorMessage = extractErrorMessage(error)
             toast.error(`Failed to load project ${id}: ${errorMessage}`)
             return null
         }
@@ -37,7 +37,7 @@ export const useProjects = () => {
             return response.data
         } catch (error: any) {
             console.error('Error creating project:', error)
-            const errorMessage = error.response?.statusText || error.message || 'Unknown error'
+            const errorMessage = extractErrorMessage(error)
             toast.error(`Failed to create project: ${errorMessage}`)
             return null
         }
@@ -51,7 +51,7 @@ export const useProjects = () => {
             return response.data
         } catch (error: any) {
             console.error(`Error updating project ${id}:`, error)
-            const errorMessage = error.response?.statusText || error.message || 'Unknown error'
+            const errorMessage = extractErrorMessage(error)
             toast.error(`Failed to update project ${id}: ${errorMessage}`)
             return null
         }
@@ -62,8 +62,10 @@ export const useProjects = () => {
         try {
             const response = await api.axiosInstance.get<Deployment[]>(`/deployments/project/${projectId}`)
             return response.data
-        } catch (error) {
+        } catch (error: any) {
             console.error(`Error fetching deployments for project ${projectId}:`, error)
+            const errorMessage = extractErrorMessage(error)
+            toast.error(`Failed to fetch deployments for project ${projectId}: ${errorMessage}`)
             return []
         }
     }
@@ -74,7 +76,7 @@ export const useProjects = () => {
             return response.data
         } catch (error: any) {
             console.error(`Error triggering deployment for project ${projectId}:`, error)
-            const errorMessage = error.response?.statusText || error.message || 'Unknown error'
+            const errorMessage = extractErrorMessage(error)
             toast.error(`Failed to trigger deployment for project ${projectId}: ${errorMessage}`)
             return null
         }
@@ -86,7 +88,7 @@ export const useProjects = () => {
             return response.data
         } catch (error: any) {
             console.error(`Error fetching environments for project ${projectId}:`, error)
-            const errorMessage = error.response?.statusText || error.message || 'Unknown error'
+            const errorMessage = extractErrorMessage(error)
             toast.error(`Failed to fetch environments for project ${projectId}: ${errorMessage}`)
             return []
         }
@@ -98,7 +100,7 @@ export const useProjects = () => {
             return response.data
         } catch (error: any) {
             console.error(`Error fetching environment ${id}:`, error)
-            const errorMessage = error.response?.statusText || error.message || 'Unknown error'
+            const errorMessage = extractErrorMessage(error)
             toast.error(`Failed to fetch environment ${id}: ${errorMessage}`)
             return null
         }
@@ -110,7 +112,7 @@ export const useProjects = () => {
             return response.data
         } catch (error: any) {
             console.error('Error creating environment:', error)
-            const errorMessage = error.response?.statusText || error.message || 'Unknown error'
+            const errorMessage = extractErrorMessage(error)
             toast.error(`Failed to create environment: ${errorMessage}`)
             return null
         }
@@ -122,7 +124,7 @@ export const useProjects = () => {
             return response.data
         } catch (error: any) {
             console.error(`Error updating environment ${id}:`, error)
-            const errorMessage = error.response?.statusText || error.message || 'Unknown error'
+            const errorMessage = extractErrorMessage(error)
             toast.error(`Failed to update environment ${id}: ${errorMessage}`)
             return null
         }
@@ -134,7 +136,7 @@ export const useProjects = () => {
             return true
         } catch (error: any) {
             console.error(`Error deleting environment ${id}:`, error)
-            const errorMessage = error.response?.statusText || error.message || 'Unknown error'
+            const errorMessage = extractErrorMessage(error)
             toast.error(`Failed to delete environment ${id}: ${errorMessage}`)
             return false
         }
@@ -146,7 +148,7 @@ export const useProjects = () => {
             return response.data
         } catch (error: any) {
             console.error(`Error fetching logs for project ${projectId}:`, error)
-            const errorMessage = error.response?.statusText || error.message || 'Unknown error'
+            const errorMessage = extractErrorMessage(error)
             toast.error(`Failed to fetch logs for project ${projectId}: ${errorMessage}`)
             return ['']
         }
@@ -158,7 +160,7 @@ export const useProjects = () => {
             return true
         } catch (error: any) {
             console.error(`Error deleting project ${id}:`, error)
-            const errorMessage = error.response?.statusText || error.message || 'Unknown error'
+            const errorMessage = extractErrorMessage(error)
             toast.error(`Failed to delete project ${id}: ${errorMessage}`)
             return false
         }

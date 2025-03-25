@@ -79,8 +79,8 @@
                 {{ database.name }}
                 <span :class="['ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
                   database.status === 'running' ? 'bg-green-100 text-green-800' :
-                  database.status === 'stopped' ? 'bg-red-100 text-red-800' :
-                  'bg-yellow-100 text-yellow-800']">
+                    database.status === 'stopped' ? 'bg-red-100 text-red-800' :
+                      'bg-yellow-100 text-yellow-800']">
                   {{ database.status }}
                 </span>
               </h2>
@@ -263,9 +263,6 @@ const loadDatabases = async () => {
         backups.value[db.id] = [db.backups[0]];
       }
     });
-  } catch (error) {
-    console.error('Failed to load databases:', error);
-    toast.error('Failed to load databases');
   } finally {
     loading.value = false;
   }
@@ -281,10 +278,6 @@ const loadBackups = async (databaseId: number) => {
       backups.value[databaseId] = [];
       toast.error('No backups found or server returned empty response');
     }
-  } catch (error: any) {
-    console.error(`Failed to load backups for database ${databaseId}:`, error);
-    toast.error(`Failed to load backups: ${error?.message || 'Unknown error'}`);
-    backups.value[databaseId] = [];
   } finally {
     backupsLoading.value[databaseId] = false;
   }
@@ -305,11 +298,6 @@ const handleDatabaseCreated = async (database: CreateDatabaseDto) => {
       toast.error(errorMessage);
       databaseError.value = errorMessage;
     }
-  } catch (error: any) {
-    console.error('Error creating database:', error);
-    const errorMessage = `Failed to create database: ${error?.message || 'Unknown error'}`;
-    toast.error(errorMessage);
-    databaseError.value = errorMessage;
   } finally {
     isCreatingDatabase.value = false;
   }
@@ -331,9 +319,6 @@ const createBackup = async (databaseId: number) => {
     } else {
       toast.error('Failed to create backup.');
     }
-  } catch (error: any) {
-    console.error('Failed to create backup:', error);
-    toast.error(`Failed to create backup: ${error?.message || 'Unknown error'}`);
   } finally {
     backupInProgress.value = false;
   }
@@ -355,9 +340,6 @@ const showConnectionDetails = async (database: ManagedDatabase) => {
     } else {
       toast.warning('Using default connection string format. Actual credentials may differ.');
     }
-  } catch (error: any) {
-    console.error('Failed to get connection string:', error);
-    toast.error(`Failed to get connection string: ${error?.message || 'Unknown error'}`);
   } finally {
     isLoadingConnectionString.value = false;
   }

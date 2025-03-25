@@ -302,9 +302,6 @@ const saveEnvironment = async () => {
 
     await fetchEnvironments()
     closeModal()
-  } catch (error) {
-    console.error('Error saving environment:', error)
-    toast.error('Failed to save environment variable', 'Please try again.')
   } finally {
     isSubmitting.value = false
   }
@@ -331,9 +328,6 @@ const deleteEnvironment = async () => {
     }
 
     await fetchEnvironments()
-  } catch (error) {
-    console.error('Error deleting environment:', error)
-    toast.error('Failed to delete environment variable', 'Please try again.')
   } finally {
     isDeleting.value = false
   }

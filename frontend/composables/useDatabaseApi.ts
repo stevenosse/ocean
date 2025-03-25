@@ -1,7 +1,7 @@
 import { useCookie } from 'nuxt/app'
 import { useToast } from './useToast'
 import type { ManagedDatabase, DatabaseBackup } from '~/types'
-import { useApi } from './useApi'
+import { extractErrorMessage, useApi } from './useApi'
 
 export interface CreateDatabaseDto {
   name: string
@@ -23,7 +23,7 @@ export const useDatabaseApi = () => {
       return response.data
     } catch (error: any) {
       console.error('Error fetching databases:', error)
-      const errorMessage = error.response?.statusText || error.message || 'Unknown error'
+      const errorMessage = extractErrorMessage(error)
       toast.error(`Failed to load databases: ${errorMessage}`)
       return []
     }
@@ -35,7 +35,7 @@ export const useDatabaseApi = () => {
       return response.data
     } catch (error: any) {
       console.error(`Error fetching database ${id}:`, error)
-      const errorMessage = error.response?.statusText || error.message || 'Unknown error'
+      const errorMessage = extractErrorMessage(error)
       toast.error(`Failed to load database: ${errorMessage}`)
       return null
     }
@@ -47,7 +47,7 @@ export const useDatabaseApi = () => {
       return response.data
     } catch (error: any) {
       console.error('Error creating database:', error)
-      const errorMessage = error.response?.statusText || error.message || 'Unknown error'
+      const errorMessage = extractErrorMessage(error)
       toast.error(`Failed to create database: ${errorMessage}`)
       return null
     }
@@ -59,7 +59,7 @@ export const useDatabaseApi = () => {
       return true
     } catch (error: any) {
       console.error(`Error deleting database ${id}:`, error)
-      const errorMessage = error.response?.statusText || error.message || 'Unknown error'
+      const errorMessage = extractErrorMessage(error)
       toast.error(`Failed to delete database: ${errorMessage}`)
       return false
     }
@@ -71,7 +71,7 @@ export const useDatabaseApi = () => {
       return response.data
     } catch (error: any) {
       console.error(`Error fetching connection string for database ${id}:`, error)
-      const errorMessage = error.response?.statusText || error.message || 'Unknown error'
+      const errorMessage = extractErrorMessage(error)
       toast.error(`Failed to get connection string: ${errorMessage}`)
       return null
     }
@@ -83,7 +83,7 @@ export const useDatabaseApi = () => {
       return response.data
     } catch (error: any) {
       console.error(`Error fetching backups for database ${databaseId}:`, error)
-      const errorMessage = error.response?.statusText || error.message || 'Unknown error'
+      const errorMessage = extractErrorMessage(error)
       toast.error(`Failed to load backups: ${errorMessage}`)
       return []
     }
@@ -95,7 +95,7 @@ export const useDatabaseApi = () => {
       return response.data
     } catch (error: any) {
       console.error(`Error creating backup for database ${databaseId}:`, error)
-      const errorMessage = error.response?.statusText || error.message || 'Unknown error'
+      const errorMessage = extractErrorMessage(error)
       toast.error(`Failed to create backup: ${errorMessage}`)
       return null
     }
@@ -107,7 +107,7 @@ export const useDatabaseApi = () => {
       return response.data
     } catch (error: any) {
       console.error(`Error fetching backup ${backupId}:`, error)
-      const errorMessage = error.response?.statusText || error.message || 'Unknown error'
+      const errorMessage = extractErrorMessage(error)
       toast.error(`Failed to load backup: ${errorMessage}`)
       return null
     }
@@ -119,7 +119,7 @@ export const useDatabaseApi = () => {
       return true
     } catch (error: any) {
       console.error(`Error restoring backup ${backupId}:`, error)
-      const errorMessage = error.response?.statusText || error.message || 'Unknown error'
+      const errorMessage = extractErrorMessage(error)
       toast.error(`Failed to restore backup: ${errorMessage}`)
       return false
     }
@@ -131,7 +131,7 @@ export const useDatabaseApi = () => {
       return true
     } catch (error: any) {
       console.error(`Error deleting backup ${backupId}:`, error)
-      const errorMessage = error.response?.statusText || error.message || 'Unknown error'
+      const errorMessage = extractErrorMessage(error)
       toast.error(`Failed to delete backup: ${errorMessage}`)
       return false
     }

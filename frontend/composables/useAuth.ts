@@ -1,7 +1,7 @@
 import { useCookie, navigateTo } from 'nuxt/app'
 import { ref } from 'vue'
 import { AuthResponse, User } from '~/types/user'
-import { useApi } from './useApi'
+import { extractErrorMessage, useApi } from './useApi'
 
 export const useAuth = () => {
   const error = ref('')
@@ -48,7 +48,7 @@ export const useAuth = () => {
       return user;
     } catch (e: any) {
       console.error('Login error:', e)
-      error.value = e.data?.message || 'Failed to login. Please check your credentials.'
+      error.value = extractErrorMessage(e)
       return false
     } finally {
       isLoading.value = false
@@ -73,7 +73,7 @@ export const useAuth = () => {
       return user.value
     } catch (e: any) {
       console.error('Registration error:', e)
-      error.value = e.data?.message || 'Failed to register. Please try again.'
+      error.value = extractErrorMessage(e)
       return null
     } finally {
       isLoading.value = false

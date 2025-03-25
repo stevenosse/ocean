@@ -109,12 +109,12 @@ const submitForm = async () => {
   error.value = ''
   isLoading.value = true
   
-  try {
-    await createUser({
-      email: formData.value.email,
-      password: formData.value.password
-    })
-    
+  const result = await createUser({
+    email: formData.value.email,
+    password: formData.value.password
+  })
+  
+  if (result) {
     formData.value = {
       email: '',
       password: '',
@@ -122,11 +122,10 @@ const submitForm = async () => {
     }
     
     emit('created')
-    
     emit('close')
-  } finally {
-    isLoading.value = false
   }
+  
+  isLoading.value = false
 }
 
 const close = () => {

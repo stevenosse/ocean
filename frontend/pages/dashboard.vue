@@ -252,19 +252,19 @@ const successfulDeployments = ref<number>(0)
 const failedDeployments = ref<number>(0)
 
 onMounted(async () => {
-    try {
-        const [projectsData, deploymentsData] = await Promise.all([
-            fetchProjects(),
-            fetchDeployments()
-        ])
+    loading.value = true
+    
+    const [projectsData, deploymentsData] = await Promise.all([
+        fetchProjects(),
+        fetchDeployments()
+    ])
 
-        projects.value = projectsData
-        recentDeployments.value = deploymentsData.slice(0, 5)
-        successfulDeployments.value = deploymentsData.filter(d => d.status === 'completed').length
-        failedDeployments.value = deploymentsData.filter(d => d.status === 'failed').length
-        deploymentsCount.value = deploymentsData.length
-    } finally {
-        loading.value = false
-    }
+    projects.value = projectsData
+    recentDeployments.value = deploymentsData.slice(0, 5)
+    successfulDeployments.value = deploymentsData.filter(d => d.status === 'completed').length
+    failedDeployments.value = deploymentsData.filter(d => d.status === 'failed').length
+    deploymentsCount.value = deploymentsData.length
+    
+    loading.value = false
 })
 </script>

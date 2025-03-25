@@ -1,5 +1,5 @@
 import { User } from "~/types"
-import { useApi } from "./useApi"
+import { extractErrorMessage, useApi } from "./useApi"
 import { useToast } from "./useToast"
 
 export const useUsers = () => {
@@ -10,9 +10,10 @@ export const useUsers = () => {
         try {
           const response = await api.axiosInstance.get<User[]>(`/users`)
           return response.data
-        } catch (error) {
+        } catch (error: any) {
           console.error('Error fetching users:', error)
-          toast.error('Failed to load users')
+          const errorMessage = extractErrorMessage(error)
+          toast.error(`Failed to load users: ${errorMessage}`)
           return []
         }
       }
@@ -21,9 +22,10 @@ export const useUsers = () => {
         try {
           const response = await api.axiosInstance.post<User>(`/users`, userData)
           return response.data
-        } catch (error) {
+        } catch (error: any) {
           console.error('Error creating user:', error)
-          toast.error('Failed to create user')
+          const errorMessage = extractErrorMessage(error)
+          toast.error(`Failed to create user: ${errorMessage}`)
           return null
         }
       }
@@ -32,9 +34,10 @@ export const useUsers = () => {
         try {
           const response = await api.axiosInstance.patch<User>(`/users/${userId}`, { role })
           return response.data
-        } catch (error) {
+        } catch (error: any) {
           console.error(`Error updating user ${userId}:`, error)
-          toast.error(`Failed to update user ${userId}`)
+          const errorMessage = extractErrorMessage(error)
+          toast.error(`Failed to update user ${userId}: ${errorMessage}`)
           return null
         }
       }
@@ -43,9 +46,10 @@ export const useUsers = () => {
         try {
           const response = await api.axiosInstance.patch<User>(`/users/${user.id}`, user)
           return response.data
-        } catch (error) {
+        } catch (error: any) {
           console.error(`Error updating user ${user.id}:`, error)
-          toast.error(`Failed to update user ${user.id}`)
+          const errorMessage = extractErrorMessage(error)
+          toast.error(`Failed to update user ${user.id}: ${errorMessage}`)
           return null
         }
       }
@@ -54,9 +58,10 @@ export const useUsers = () => {
         try {
           const response = await api.axiosInstance.delete(`/users/${userId}`)
           return response.data
-        } catch (error) {
+        } catch (error: any) {
           console.error(`Error deleting user ${userId}:`, error)
-          toast.error(`Failed to delete user ${userId}`)
+          const errorMessage = extractErrorMessage(error)
+          toast.error(`Failed to delete user ${userId}: ${errorMessage}`)
           return false
         }
       }

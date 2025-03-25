@@ -269,30 +269,25 @@ const validateAndSaveProject = async () => {
 
   isSubmitting.value = true
 
-  try {
-    const result = await createProject(project.value)
+  const result = await createProject(project.value)
 
-    if (result) {
-      if (project.value.repositoryUrl?.includes('github.com')) {
-        const width = 800
-        const height = 600
-        const left = (window.innerWidth - width) / 2
-        const top = (window.innerHeight - height) / 2
-        window.open(
-          `${baseURL}/github/install?projectId=${result.id}`,
-          'github_install',
-          `width=${width},height=${height},top=${top},left=${left},menubar=no,toolbar=no,location=no,status=no`
-        )
-      }
-      
-      toast.success('Project created successfully', 'Your new project is ready')
-      router.push(`/projects/${result.id}`)
+  if (result) {
+    if (project.value.repositoryUrl?.includes('github.com')) {
+      const width = 800
+      const height = 600
+      const left = (window.innerWidth - width) / 2
+      const top = (window.innerHeight - height) / 2
+      window.open(
+        `${baseURL}/github/install?projectId=${result.id}`,
+        'github_install',
+        `width=${width},height=${height},top=${top},left=${left},menubar=no,toolbar=no,location=no,status=no`
+      )
     }
-  } catch (error) {
-    console.error('Error creating project:', error)
-    toast.error('Failed to create project', 'Please try again.')
-  } finally {
-    isSubmitting.value = false
+    
+    toast.success('Project created successfully', 'Your new project is ready')
+    router.push(`/projects/${result.id}`)
   }
+  
+  isSubmitting.value = false
 }
 </script>

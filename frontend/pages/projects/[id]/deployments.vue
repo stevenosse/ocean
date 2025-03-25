@@ -83,8 +83,6 @@ const loading = ref(true)
 onMounted(async () => {
   try {
     deployments.value = await fetchProjectDeployments(parseInt(projectId))
-  } catch (error) {
-    console.error('Error fetching project deployments:', error)
   } finally {
     loading.value = false
   }
