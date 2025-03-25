@@ -6,11 +6,11 @@ import { PrismaService } from 'src/prisma/prisma.service';
 @Injectable()
 export class WebhooksService {
   private readonly logger = new Logger(WebhooksService.name);
-  
+
   constructor(
     private readonly deploymentsService: DeploymentsService,
     private readonly prisma: PrismaService
-  ) {}
+  ) { }
 
   async verifyWebhookSignature(payload: any, signature: string): Promise<boolean> {
     if (!signature) {
@@ -18,8 +18,51 @@ export class WebhooksService {
       return false;
     }
 
-    // DON'T DO THIS AT HOME
-    return signature === githubConfig.webhookSecret;
+    try {
+      const crypto = require('crypto');
+
+      if (!githubConfig.webhookSecret) {
+        this.logger.error('No webhook secret configured');
+        return false;
+      }
+
+      const hmac = crypto.createHmac('sha256', githubConfig.webhookSecret);
+
+      const requestBody = typeof payload === 'string' ? payload : JSON.stringify(payload);
+      hmac.update(requestBody);
+
+      const digest = hmac.digest('hex');
+      const expectedSignature = `sha256=${digest}`;
+
+      const signatureHash = signature.startsWith('sha256=') ? signature : `sha256=${signature}`;
+      this.logger.debug(`Expected signature: ${expectedSignature}`);
+      this.logger.debug(`Received signature: ${signatureHash}`);
+
+      if (expectedSignature === signatureHash) {
+        return true;
+      }
+
+      try {
+        const sigHash = signatureHash.replace('sha256=', '');
+        const expHash = expectedSignature.replace('sha256=', '');
+
+        if (sigHash.length !== expHash.length) {
+          this.logger.warn(`Signature length mismatch: ${sigHash.length} vs ${expHash.length}`);
+          return false;
+        }
+
+        const result = crypto.timingSafeEqual(Buffer.from(sigHash), Buffer.from(expHash));
+
+        return result;
+      } catch (error) {
+        this.logger.error(`Error verifying webhook signature: ${error.message}`, error.stack);
+        return false;
+      }
+
+    } catch (error) {
+      this.logger.error(`Error verifying webhook signature: ${error.message}`, error.stack);
+      return false;
+    }
   }
 
   async processGithubWebhook(payload: any): Promise<any> {
@@ -30,12 +73,12 @@ export class WebhooksService {
       const commitMessage = payload.head_commit?.message || '';
       const pusherName = payload.pusher?.name || 'unknown';
       const installationId = payload.installation?.id;
-      
+
       this.logger.log(`Processing GitHub webhook for repo: ${repoUrl}, branch: ${branch}, commit: ${commitHash}`);
       if (installationId) {
         this.logger.log(`GitHub App installation ID: ${installationId}`);
       }
-      
+
       if (!repoUrl) {
         throw new Error('Repository URL not found in webhook payload');
       }
@@ -58,7 +101,7 @@ export class WebhooksService {
       const deployments = [];
       for (const project of projects) {
         this.logger.log(`Creating deployment for project: ${project.name} (ID: ${project.id})`);
-        
+
         const deployment = await this.deploymentsService.create({
           projectId: project.id,
           commitHash: commitHash,
@@ -70,7 +113,7 @@ export class WebhooksService {
             installationId: installationId || null
           }
         });
-        
+
         deployments.push(deployment);
         this.logger.log(`Successfully created deployment ID: ${deployment.id} for project: ${project.name}`);
       }

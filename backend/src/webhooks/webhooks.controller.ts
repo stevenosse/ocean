@@ -1,4 +1,5 @@
-import { Controller, Post, Body, Headers, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
+import { Controller, Post, Body, Headers, BadRequestException, NotFoundException, Logger, Req } from '@nestjs/common';
+import { Request } from 'express';
 import { WebhooksService } from './webhooks.service';
 
 @Controller('webhooks')
@@ -13,11 +14,16 @@ export class WebhooksController {
     @Headers('x-hub-signature-256') signature: string,
     @Headers('x-github-delivery') delivery: string,
     @Body() payload: any,
+    @Req() request: Request,
   ) {
     try {
       this.logger.log(`Received GitHub webhook event: ${event}, delivery: ${delivery}`);
+      this.logger.debug(`Received signature: ${signature}`);
       
-      const isValid = await this.webhooksService.verifyWebhookSignature(payload, signature);
+      const rawBody = (request as any).rawBody || JSON.stringify(payload);
+      this.logger.debug(`Raw body length: ${rawBody.length}`);
+      
+      const isValid = await this.webhooksService.verifyWebhookSignature(rawBody, signature);
       if (!isValid) {
         this.logger.error('Invalid webhook signature');
         throw new BadRequestException('Invalid webhook signature');
