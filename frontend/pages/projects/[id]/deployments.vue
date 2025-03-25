@@ -71,22 +71,22 @@
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { useApi } from '~/composables/useApi'
+import { useProjects } from '~/composables/useProjects'
 import type { Deployment } from '~/types'
 
 const route = useRoute()
-const api = useApi()
+const { fetchProjectDeployments } = useProjects()
 const projectId = route.params.id as string
 const deployments = ref<Deployment[]>([])
 const loading = ref(true)
 
 onMounted(async () => {
   try {
-    deployments.value = await api.fetchProjectDeployments(parseInt(projectId))
+    deployments.value = await fetchProjectDeployments(parseInt(projectId))
   } catch (error) {
     console.error('Error fetching project deployments:', error)
   } finally {
     loading.value = false
   }
 })
-</script>~/composables/useApi-legacy
+</script>

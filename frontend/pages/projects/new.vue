@@ -191,15 +191,16 @@
 <script lang="ts" setup>
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { useApi } from '~/composables/useApi'
+import { useProjects } from '~/composables/useProjects'
 import { useToast } from '~/composables/useToast'
 import type { Project } from '~/types'
 
 const router = useRouter()
-const api = useApi()
 const toast = useToast()
 const config = useRuntimeConfig()
 const baseURL = config.public.apiURL
+
+const { createProject } = useProjects()
 
 const project = ref<Partial<Project>>({
   name: '',
@@ -269,7 +270,7 @@ const validateAndSaveProject = async () => {
   isSubmitting.value = true
 
   try {
-    const result = await api.createProject(project.value)
+    const result = await createProject(project.value)
 
     if (result) {
       if (project.value.repositoryUrl?.includes('github.com')) {
@@ -294,4 +295,4 @@ const validateAndSaveProject = async () => {
     isSubmitting.value = false
   }
 }
-</script>~/composables/useApi-legacy
+</script>

@@ -193,7 +193,6 @@ import { useToast } from '~/composables/useToast';
 import ConfirmationModal from '~/components/ConfirmationModal.vue';
 import UserCreationModal from '~/components/UserCreationModal.vue';
 
-const api = useApi();
 const toast = useToast();
 const users = ref([]);
 const filteredUsers = ref([]);
@@ -203,6 +202,7 @@ const error = ref('');
 
 const searchQuery = ref('');
 const roleFilter = ref('');
+const { updateUserRole: apiUpdateUserRole, deleteUser: apiDeleteUser, fetchUsers: apiFetchUsers } = useUsers();
 
 const showUserCreationModal = ref(false);
 
@@ -217,7 +217,7 @@ const isDeletingUser = ref(false);
 const fetchUsers = async () => {
   loadingUsers.value = true;
   try {
-    const response = await api.get('/users');
+    const response = await apiFetchUsers();
     users.value = response;
     filterUsers();
   } catch (err) {
@@ -263,7 +263,7 @@ const updateUserRole = async () => {
   
   isUpdatingRole.value = true;
   try {
-    await api.patch(`/users/${selectedUser.value.id}`, { role: selectedRole.value });
+    await apiUpdateUserRole(selectedUser.value.id, selectedRole.value);
     
     const userIndex = users.value.findIndex(u => u.id === selectedUser.value.id);
     if (userIndex !== -1) {
@@ -296,7 +296,7 @@ const deleteUser = async () => {
   
   isDeletingUser.value = true;
   try {
-    await api.delete(`/users/${selectedUser.value.id}`);
+    await apiDeleteUser(selectedUser.value.id);
     
     users.value = users.value.filter(u => u.id !== selectedUser.value.id);
     filterUsers();
@@ -319,4 +319,4 @@ const formatDate = (dateString) => {
 onMounted(() => {
   fetchUsers();
 });
-</script>~/composables/useApi-legacy
+</script>

@@ -362,7 +362,7 @@ import { useToast } from '~/composables/useToast'
 import type { Project, Deployment } from '~/types'
 
 const route = useRoute()
-const { fetchProject, fetchProjectDeployments } = useProjects()
+const { fetchProject, fetchProjectDeployments, triggerDeploy: apiTriggerDeploy } = useProjects()
 const project = ref<Project | null>(null)
 const deployments = ref<Deployment[]>([])
 const loading = ref(true)
@@ -434,7 +434,7 @@ const triggerDeploy = async () => {
   if (!project.value) return
 
   try {
-    const result = await fetchProjectDeployments(project.value.id)
+    const result = await apiTriggerDeploy(project.value.id)
     if (result) {
       toast.success('Deployment triggered successfully!')
 

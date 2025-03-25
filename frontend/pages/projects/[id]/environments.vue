@@ -166,13 +166,13 @@
 <script lang="ts" setup>
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useProjects } from '~/composables/useProjects'
 import { useToast } from '~/composables/useToast'
-import { useApi } from '~/composables/useApi'
 import type { Environment } from '~/types'
 
 const route = useRoute()
 const toast = useToast()
-const api = useApi()
+const { fetchEnvironments: apiFetchEnvironments, createEnvironment, updateEnvironment, deleteEnvironment: apiDeleteEnvironment } = useProjects()
 
 const environments = ref<Environment[]>([])
 const loading = ref(true)
@@ -204,7 +204,7 @@ const fetchEnvironments = async () => {
   try {
     const projectId = Number(route.params.id)
     if (!isNaN(projectId)) {
-      environments.value = await api.fetchEnvironments(projectId)
+      environments.value = await apiFetchEnvironments(projectId)
     }
   } catch (error) {
     console.error('Error fetching environments:', error)
@@ -282,7 +282,7 @@ const saveEnvironment = async () => {
     if (isNaN(projectId)) throw new Error('Invalid project ID')
 
     if (isEditing.value && currentEnv.id) {
-      const result = await api.updateEnvironment(currentEnv.id, {
+      const result = await updateEnvironment(currentEnv.id, {
         value: currentEnv.value,
         isSecret: currentEnv.isSecret
       })
@@ -292,7 +292,7 @@ const saveEnvironment = async () => {
         throw new Error('Failed to update environment variable')
       }
     } else {
-      const result = await api.createEnvironment(currentEnv)
+      const result = await createEnvironment(currentEnv)
       if (result) {
         toast.success('Environment variable added successfully', 'A redeployment has been triggered')
       } else {
@@ -321,7 +321,7 @@ const deleteEnvironment = async () => {
   isDeleting.value = true
 
   try {
-    const success = await api.deleteEnvironment(envToDelete.value.id)
+    const success = await apiDeleteEnvironment(envToDelete.value.id)
 
     if (success) {
       toast.success('Environment variable deleted successfully', 'A redeployment has been triggered')
@@ -339,4 +339,3 @@ const deleteEnvironment = async () => {
   }
 }
 </script>
-~/composables/useApi-legacy

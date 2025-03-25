@@ -101,16 +101,15 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, nextTick, computed, onMounted, onBeforeUnmount, watch } from 'vue'
-import { useApi } from '~/composables/useApi'
+import { ref, nextTick, onMounted, onBeforeUnmount, watch } from 'vue'
 import AnsiToHtml from 'ansi-to-html'
 import { useToast } from '~/composables/useToast'
+import { useProjects } from '~/composables/useProjects';
 
 const props = defineProps<{
   projectId: number
 }>()
 
-const api = useApi()
 const toast = useToast()
 const logs = ref<string[]>([])
 const loading = ref(false)
@@ -134,6 +133,8 @@ const ansiToHtml = new AnsiToHtml({
   }
 })
 
+const { fetchProjectLogs } = useProjects()
+
 const fetchLogs = async () => {
   if (loading.value) return
   
@@ -141,8 +142,7 @@ const fetchLogs = async () => {
   error.value = null
   
   try {
-    const logData = await api.fetchProjectLogs(props.projectId)
-    console.log(logData)
+    const logData = await fetchProjectLogs(props.projectId)
     
     if (logData) {
       logs.value = logData.filter(line => line.trim() !== '')
@@ -172,7 +172,6 @@ const copyLogsToClipboard = async () => {
     await navigator.clipboard.writeText(logs.value.join('\n'))
     toast.success('Logs copied to clipboard')
   } catch (err) {
-    console.error('Failed to copy logs:', err)
     toast.error('Failed to copy logs to clipboard')
   }
 }
@@ -209,4 +208,4 @@ onBeforeUnmount(() => {
   }
 })
 
-</script>~/composables/useApi-legacy
+</script>

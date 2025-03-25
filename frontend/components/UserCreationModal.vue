@@ -79,7 +79,7 @@
 
 <script lang="ts" setup>
 import { ref } from 'vue'
-import { useApi } from '~/composables/useApi'
+import { useUsers } from '~/composables/useUsers'
 
 const props = defineProps<{
   isOpen: boolean
@@ -90,7 +90,7 @@ const emit = defineEmits<{
   (e: 'created'): void
 }>()
 
-const api = useApi()
+const { createUser } = useUsers()
 const isLoading = ref(false)
 const error = ref('')
 
@@ -110,7 +110,7 @@ const submitForm = async () => {
   isLoading.value = true
   
   try {
-    await api.createUser({
+    await createUser({
       email: formData.value.email,
       password: formData.value.password
     })
@@ -142,4 +142,4 @@ const close = () => {
   
   emit('close')
 }
-</script>~/composables/useApi-legacy
+</script>

@@ -21,7 +21,7 @@ export const useProjects = () => {
 
     const fetchProject = async (id: number): Promise<Project | null> => {
         try {
-            const response = await api.axiosInstance.get<Project>(`/project/${id}`)
+            const response = await api.axiosInstance.get<Project>(`/projects/${id}`)
             return response.data
         } catch (error: any) {
             console.error(`Error fetching project ${id}:`, error)
@@ -33,7 +33,7 @@ export const useProjects = () => {
 
     const createProject = async (project: Partial<Project>): Promise<Project | null> => {
         try {
-            const response = await api.axiosInstance.post<Project>(`/project`, project)
+            const response = await api.axiosInstance.post<Project>(`/projects`, project)
             return response.data
         } catch (error: any) {
             console.error('Error creating project:', error)
@@ -47,7 +47,7 @@ export const useProjects = () => {
         try {
             const { id: projectId, createdAt, updatedAt, applicationUrl, ...cleanedProject } = project;
 
-            const response = await api.axiosInstance.patch<Project>(`/project/${id}`, cleanedProject)
+            const response = await api.axiosInstance.patch<Project>(`/projects/${id}`, cleanedProject)
             return response.data
         } catch (error: any) {
             console.error(`Error updating project ${id}:`, error)

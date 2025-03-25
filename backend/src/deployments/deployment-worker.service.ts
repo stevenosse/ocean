@@ -148,16 +148,12 @@ export class DeploymentWorkerService {
         select: { containerPort: true }
       });
 
-      const successMessage = completedDeployment?.containerPort
-        ? `Deployment completed successfully. Application is running on port ${completedDeployment.containerPort}.`
-        : 'Deployment completed successfully.';
-
       const currentDeployment = await this.prisma.deployment.findUnique({
         where: { id: deployment.id },
         select: { logs: true }
       });
 
-      const updatedLogs = `${currentDeployment?.logs || ''}\n\n${successMessage}`;
+      const updatedLogs = `${currentDeployment?.logs || ''}`;
 
       await this.prisma.deployment.update({
         where: { id: deployment.id },

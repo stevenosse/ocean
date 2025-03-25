@@ -424,4 +424,4 @@ const triggerDeploy = async (projectId: number) => {
     toast.error('Failed to trigger deployment', 'Please try again.')
   }
 }
-</script>~/composables/useApi-legacy
+</script>

@@ -1,7 +1,7 @@
 export interface User {
   id: number;
   email: string;
-  role?: string;
+  role: string;
   createdAt: string;
   updatedAt: string;
   forcePasswordChange?: boolean;
