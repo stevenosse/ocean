@@ -1,21 +1,21 @@
 <template>
   <div>
-    <div class="flex items-center justify-between mb-8">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-8 gap-3 sm:gap-0">
       <div>
-        <h1 class="text-3xl font-bold text-gray-900">{{ project?.name }}</h1>
-        <p v-if="project?.repositoryUrl" class="mt-1 text-sm text-gray-500 flex items-center">
-          <svg class="mr-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">{{ project?.name }}</h1>
+        <p v-if="project?.repositoryUrl" class="mt-1 text-sm text-gray-500 flex items-center overflow-hidden">
+          <svg class="mr-1 h-4 w-4 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
             stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
           </svg>
-          {{ project.repositoryUrl }}
+          <span class="truncate">{{ project.repositoryUrl }}</span>
         </p>
       </div>
-      <div class="flex space-x-3">
+      <div class="flex flex-wrap gap-2 sm:space-x-3 w-full sm:w-auto">
         <!-- Primary actions -->
         <button v-if="project && project.active" @click="triggerDeploy"
-          class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-500 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+          class="inline-flex items-center px-3 sm:px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-500 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 w-full sm:w-auto justify-center">
           <svg class="-ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
             stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -117,8 +117,8 @@
 
     <div v-else>
       <!-- Tabs Navigation -->
-      <div class="border-b border-gray-200 mt-8">
-        <nav class="-mb-px flex space-x-10" aria-label="Tabs">
+      <div class="border-b border-gray-200 mt-6 sm:mt-8">
+        <nav class="-mb-px flex space-x-4 sm:space-x-10 overflow-x-auto pb-1" aria-label="Tabs">
           <button v-for="tab in tabs" :key="tab.name" @click="switchTab(tab.name)" :class="[
             currentTab === tab.name
               ? 'border-blue-500 text-blue-600'
@@ -157,11 +157,11 @@
       </div>
 
       <!-- Tab Content -->
-      <div class="mt-8 bg-white shadow-md rounded-lg overflow-hidden border border-gray-100">
+      <div class="mt-4 sm:mt-8 bg-white shadow-md rounded-lg overflow-hidden border border-gray-100">
         <!-- Overview Tab -->
         <div v-if="currentTab === 'Overview'" class="bg-white shadow overflow-hidden sm:rounded-lg">
-          <div class="px-4 py-5 sm:px-6">
-            <h3 class="text-lg leading-6 font-medium text-gray-900">Project Overview</h3>
+          <div class="px-4 py-4 sm:py-5 sm:px-6">
+            <h3 class="text-base sm:text-lg leading-6 font-medium text-gray-900">Project Overview</h3>
             <p class="mt-1 max-w-2xl text-sm text-gray-500">Basic project information.</p>
           </div>
           <div class="border-t border-gray-200">
@@ -279,7 +279,7 @@
               </div>
             </div>
 
-            <div v-else>
+            <div v-else class="overflow-x-auto">
               <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                   <tr>
