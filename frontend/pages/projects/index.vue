@@ -1,9 +1,9 @@
 <template>
   <div>
-    <div class="flex justify-between items-center mb-6">
-      <h1 class="text-3xl font-bold text-gray-900">Projects</h1>
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0 mb-4 sm:mb-6">
+      <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Projects</h1>
       <NuxtLink to="/projects/new"
-        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+        class="inline-flex items-center px-3 sm:px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 w-full sm:w-auto justify-center sm:justify-start">
         <svg class="-ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
           stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -12,7 +12,7 @@
       </NuxtLink>
     </div>
 
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 sm:mb-6 gap-3 sm:gap-4">
       <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
         <div class="relative w-full sm:w-64">
           <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -23,20 +23,20 @@
             </svg>
           </div>
           <input v-model="searchQuery" type="text" placeholder="Search projects..."
-            class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+            class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm" />
         </div>
 
         <select v-model="statusFilter"
-          class="block w-full sm:w-auto pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+          class="block w-full sm:w-auto pl-3 pr-10 py-2.5 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm rounded-md">
           <option value="all">All Status</option>
           <option value="active">Active</option>
           <option value="inactive">Inactive</option>
         </select>
       </div>
 
-      <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto justify-between md:justify-end mt-3 md:mt-0">
         <select v-model="sortOption"
-          class="block w-full sm:w-auto pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+          class="block w-full sm:w-auto pl-3 pr-10 py-2.5 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm rounded-md">
           <option value="name-asc">Name (A-Z)</option>
           <option value="name-desc">Name (Z-A)</option>
           <option value="date-desc">Newest First</option>
@@ -45,7 +45,7 @@
 
         <div class="inline-flex rounded-md shadow-sm">
           <button @click="viewMode = ViewMode.Grid" :class="{
-            'px-4 py-2 text-sm font-medium rounded-l-md border': true,
+            'px-3 sm:px-4 py-2.5 text-sm font-medium rounded-l-md border': true,
             'bg-blue-50 text-blue-700 border-blue-500': viewMode === 'grid',
             'bg-white text-gray-700 border-gray-300 hover:bg-gray-50': viewMode !== 'grid'
           }">
@@ -56,7 +56,7 @@
             </svg>
           </button>
           <button @click="viewMode = ViewMode.List" :class="{
-            'px-4 py-2 text-sm font-medium rounded-r-md border': true,
+            'px-3 sm:px-4 py-2.5 text-sm font-medium rounded-r-md border': true,
             'bg-blue-50 text-blue-700 border-blue-500': viewMode === 'list',
             'bg-white text-gray-700 border-gray-300 hover:bg-gray-50': viewMode !== 'list'
           }">
@@ -121,17 +121,17 @@
     </div>
 
     <div v-else-if="viewMode === 'grid' && filteredProjects.length > 0"
-      class="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+      class="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
       <div v-for="project in filteredProjects" :key="project.id"
         class="bg-white shadow-md rounded-lg border border-gray-200 hover:shadow-lg transition-shadow duration-300 flex flex-col h-full w-full">
-        <div class="px-5 pt-5 pb-3 flex justify-between items-start">
-          <div class="text-lg font-semibold text-blue-600">
+        <div class="px-4 sm:px-5 pt-4 sm:pt-5 pb-3 flex justify-between items-start">
+          <div class="text-base sm:text-lg font-semibold text-blue-600 break-words">
             <NuxtLink :to="`/projects/${project.id}`" class="hover:underline">
               {{ project.name }}
             </NuxtLink>
           </div>
           <span :class="{
-            'px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full': true,
+            'px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ml-2 flex-shrink-0': true,
             'bg-green-100 text-green-800': project.active,
             'bg-red-100 text-red-800': !project.active
           }">
@@ -139,7 +139,7 @@
           </span>
         </div>
 
-        <div class="px-5 pb-4 flex-grow flex flex-col">
+        <div class="px-4 sm:px-5 pb-4 flex-grow flex flex-col">
           <div class="text-sm text-gray-500 flex items-start mb-2">
             <svg class="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400 mt-0.5" xmlns="http://www.w3.org/2000/svg"
               fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -147,7 +147,7 @@
                 d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
             </svg>
             <a :href="project.repositoryUrl" target="_blank" rel="noopener noreferrer"
-              class="hover:underline truncate w-full overflow-hidden text-ellipsis inline-block">
+              class="hover:underline truncate w-full overflow-hidden text-ellipsis inline-block break-words">
               {{ project.repositoryUrl }}
             </a>
           </div>
@@ -168,13 +168,13 @@
                 d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
             </svg>
             <a :href="project.applicationUrl" target="_blank" rel="noopener noreferrer"
-              class="hover:underline truncate text-blue-500 inline-block w-full">
+              class="hover:underline truncate text-blue-500 inline-block w-full break-words">
               {{ project.applicationUrl }}
             </a>
           </div>
 
           <div v-if="projectDeployments[project.id]" class="mt-auto pt-3 border-t border-gray-100">
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between flex-wrap gap-1">
               <span class="text-xs font-medium text-gray-500">Last deployment:</span>
               <span :class="{
                 'px-2 inline-flex text-xs leading-5 font-semibold rounded-full': true,
@@ -191,17 +191,17 @@
           </div>
         </div>
 
-        <div class="border-t border-gray-200 px-5 py-4 flex justify-between items-center">
+        <div class="border-t border-gray-200 px-4 sm:px-5 py-3 sm:py-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
           <div>
             <span class="text-xs text-gray-500">Created: {{ new Date(project.createdAt).toLocaleDateString() }}</span>
           </div>
-          <div class="flex space-x-2">
+          <div class="flex flex-wrap gap-2">
             <NuxtLink :to="`/projects/${project.id}`"
-              class="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+              class="inline-flex items-center justify-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 w-full sm:w-auto">
               View
             </NuxtLink>
             <button v-if="project.active" @click="triggerDeploy(project.id)"
-              class="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-green-700 bg-green-50 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200">
+              class="inline-flex items-center justify-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-green-700 bg-green-50 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200 w-full sm:w-auto">
               Deploy
             </button>
           </div>
@@ -210,27 +210,98 @@
     </div>
 
     <div v-else-if="viewMode === 'list' && filteredProjects.length > 0"
-      class="bg-white shadow overflow-hidden sm:rounded-lg">
-      <table class="min-w-full divide-y divide-gray-200">
+      class="bg-white shadow overflow-hidden sm:rounded-lg overflow-x-auto">
+      <div class="block sm:hidden">
+        <!-- Mobile card view for list mode -->
+        <div v-for="project in filteredProjects" :key="project.id" class="border-b border-gray-200 p-4">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center">
+              <div class="flex-shrink-0 h-8 w-8 flex items-center justify-center rounded-md bg-blue-600 text-white mr-3">
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                </svg>
+              </div>
+              <NuxtLink :to="`/projects/${project.id}`" class="text-blue-600 hover:text-blue-900 font-medium">
+                {{ project.name }}
+              </NuxtLink>
+            </div>
+            <span :class="{
+              'px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full': true,
+              'bg-green-100 text-green-800': project.active,
+              'bg-red-100 text-red-800': !project.active
+            }">
+              {{ project.active ? 'Active' : 'Inactive' }}
+            </span>
+          </div>
+          
+          <div class="text-sm text-gray-500 mb-1 truncate">
+            <span class="font-medium">Repo:</span> 
+            <a :href="project.repositoryUrl" target="_blank" class="hover:underline truncate inline-block max-w-[200px]">
+              {{ project.repositoryUrl }}
+            </a>
+          </div>
+          
+          <div class="text-sm text-gray-500 mb-1">
+            <span class="font-medium">Branch:</span> {{ project.branch || 'default branch' }}
+          </div>
+          
+          <div class="text-sm text-gray-500 mb-1">
+            <span class="font-medium">Created:</span> {{ new Date(project.createdAt).toLocaleDateString() }}
+          </div>
+          
+          <div v-if="project.applicationUrl" class="text-sm text-gray-500 mb-2">
+            <span class="font-medium">URL:</span>
+            <a :href="project.applicationUrl" target="_blank" class="hover:underline text-blue-500 truncate inline-block max-w-[200px]">
+              {{ project.applicationUrl }}
+            </a>
+          </div>
+          
+          <div v-if="projectDeployments[project.id]" class="text-sm mb-3">
+            <span class="font-medium text-gray-500">Last deployment:</span>
+            <span :class="{
+              'px-2 inline-flex text-xs leading-5 font-semibold rounded-full ml-1': true,
+              'bg-green-100 text-green-800': projectDeployments[project.id].status === 'completed',
+              'bg-yellow-100 text-yellow-800': projectDeployments[project.id].status === 'pending' || projectDeployments[project.id].status === 'in_progress',
+              'bg-red-100 text-red-800': projectDeployments[project.id].status === 'failed'
+            }">
+              {{ projectDeployments[project.id].status }}
+            </span>
+          </div>
+          
+          <div class="flex space-x-3 pt-2 border-t border-gray-100">
+            <NuxtLink :to="`/projects/${project.id}`" class="text-blue-600 hover:text-blue-900 text-sm font-medium">View</NuxtLink>
+            <NuxtLink :to="`/projects/${project.id}/edit`" class="text-indigo-600 hover:text-indigo-900 text-sm font-medium">Edit</NuxtLink>
+            <button v-if="project.active" @click="triggerDeploy(project.id)"
+              class="text-green-600 hover:text-green-900 text-sm font-medium">
+              Deploy
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Desktop table view -->
+      <table class="min-w-full divide-y divide-gray-200 hidden sm:table">
         <thead class="bg-gray-50">
           <tr>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Project</th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Status</th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Repository</th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Branch</th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Created</th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Actions</th>
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
           <tr v-for="project in filteredProjects" :key="project.id">
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+            <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm font-medium text-gray-900">
               <div class="flex items-center">
                 <div class="flex-shrink-0 h-8 w-8 flex items-center justify-center rounded-md bg-blue-600 text-white">
                   <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -251,7 +322,7 @@
                 </div>
               </div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">
+            <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm">
               <span :class="{
                 'px-2 inline-flex text-xs leading-5 font-semibold rounded-full': true,
                 'bg-green-100 text-green-800': project.active,
@@ -270,18 +341,18 @@
                 </span>
               </div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 max-w-xs truncate">
+            <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-gray-500 max-w-[150px] sm:max-w-xs truncate">
               <a :href="project.repositoryUrl" target="_blank" class="hover:underline">
                 {{ project.repositoryUrl }}
               </a>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+            <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-gray-500">
               {{ project.branch || 'default branch' }}
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+            <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-gray-500">
               {{ new Date(project.createdAt).toLocaleDateString() }}
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 space-x-2">
+            <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-gray-500 space-x-1 sm:space-x-2">
               <NuxtLink :to="`/projects/${project.id}`" class="text-blue-600 hover:text-blue-900">View</NuxtLink>
               <NuxtLink :to="`/projects/${project.id}/edit`" class="text-indigo-600 hover:text-indigo-900">Edit
               </NuxtLink>
