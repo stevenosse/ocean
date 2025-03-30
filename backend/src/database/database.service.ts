@@ -88,15 +88,15 @@ export class DatabaseService {
       this.logger.log(`Creating database: ${createDatabaseDto.name}`);
 
       try {
-        await execAsync(`psql -c "CREATE USER ${username} WITH PASSWORD '${password}'" -d postgres`);
+        await execAsync(`PGPASSWORD=postgres psql -U postgres -c "CREATE USER ${username} WITH PASSWORD '${password}'" -d postgres`);
       } catch (userError) {
         this.logger.warn(`User creation failed, trying to update password: ${userError.message}`);
-        await execAsync(`psql -c "ALTER USER ${username} WITH PASSWORD '${password}'" -d postgres`);
+        await execAsync(`PGPASSWORD=postgres psql -U postgres -c "ALTER USER ${username} WITH PASSWORD '${password}'" -d postgres`);
       }
 
-      await execAsync(`createdb -T template0 ${createDatabaseDto.name}`);
+      await execAsync(`PGPASSWORD=postgres createdb -U postgres -T template0 ${createDatabaseDto.name}`);
 
-      await execAsync(`psql -c "GRANT ALL PRIVILEGES ON DATABASE ${createDatabaseDto.name} TO ${username}" -d postgres`);
+      await execAsync(`PGPASSWORD=postgres psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE ${createDatabaseDto.name} TO ${username}" -d postgres`);
       this.logger.log(`Successfully created database: ${createDatabaseDto.name}`);
     } catch (error) {
       this.logger.error(`Failed to create database: ${error.message}`);
