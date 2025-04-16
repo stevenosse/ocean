@@ -4,9 +4,11 @@ import { CreateEnvironmentDto } from './dto/create-environment.dto';
 import { UpdateEnvironmentDto } from './dto/update-environment.dto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { DeploymentsService } from '../deployments/deployments.service';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @ApiTags('environments')
 @Controller('environments')
+@UseGuards(JwtAuthGuard)
 export class EnvironmentsController {
   constructor(
     private readonly environmentsService: EnvironmentsService,

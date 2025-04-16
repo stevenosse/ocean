@@ -1,10 +1,12 @@
-import { Controller, Get, Post, Delete, Param, Body, Query, HttpCode, HttpStatus, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Body, Query, HttpCode, HttpStatus, ParseIntPipe, UseGuards } from '@nestjs/common';
 import { DatabaseService } from './database.service';
 import { ManagedDatabase, DatabaseBackup } from '@prisma/client';
 import { CreateDatabaseDto } from './dto/create-database.dto';
 import { DatabaseTunnelingService } from './database-tunneling.service';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('database')
+@UseGuards(JwtAuthGuard)
 export class DatabaseController {
   constructor(
     private readonly databaseService: DatabaseService,

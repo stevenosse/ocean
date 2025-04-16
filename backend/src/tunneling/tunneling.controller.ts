@@ -1,9 +1,11 @@
-import { Controller, Get, Post, Param, Query, Delete, ParseIntPipe, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Param, Query, Delete, ParseIntPipe, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
 import { TunnelingService } from './tunneling.service';
 import { ApiTags, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('tunneling')
 @ApiTags('tunneling')
+@UseGuards(JwtAuthGuard)
 export class TunnelingController {
   constructor(private readonly tunnelingService: TunnelingService) {}
 

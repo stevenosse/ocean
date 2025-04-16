@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Body, Param, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, NotFoundException, BadRequestException, UseGuards } from '@nestjs/common';
 import { DeploymentsService } from './deployments.service';
 import { CreateDeploymentDto } from './dto/create-deployment.dto';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('deployments')
+@UseGuards(JwtAuthGuard)
 export class DeploymentsController {
   constructor(private readonly deploymentsService: DeploymentsService) { }
 
