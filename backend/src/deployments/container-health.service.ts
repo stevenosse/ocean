@@ -9,12 +9,23 @@ const execAsync = promisify(exec);
 @Injectable()
 export class ContainerHealthService {
   private readonly logger = new Logger(ContainerHealthService.name);
-  private readonly MAX_RETRIES = 5;
-  private readonly RETRY_DELAY = 10000; // 10 seconds
-  private readonly STARTUP_GRACE_PERIOD = 30000; // 30 seconds grace period for startup
-  private readonly MONITORING_DURATION = 3600000; // 1 hour of monitoring after successful deployment
+  private readonly MAX_RETRIES = 10;
+  private readonly RETRY_DELAY = 30000;
+  private readonly STARTUP_GRACE_PERIOD = 120000;
+  private readonly MONITORING_DURATION = 3600000;
+  private readonly MAX_CONSECUTIVE_FAILURES = 5;
+  private readonly failureCounters = new Map<string, number>();
 
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {
+    // Clean up any lingering processes on service shutdown
+    process.once('beforeExit', this.cleanup.bind(this));
+  }
+
+  private cleanup() {
+    this.failureCounters.clear();
+    // Remove our own event listeners
+    process.removeAllListeners('beforeExit');
+  }
 
   async checkContainerHealth(deploymentId: number) {
     const deployment = await this.prisma.deployment.findUnique({
@@ -40,9 +51,21 @@ export class ContainerHealthService {
         }
       });
 
+      // Reset failure counter on successful check
+      if (containerStatus === 'running') {
+        this.failureCounters.set(containerName, 0);
+      }
+
       if (containerStatus !== 'running') {
-        this.logger.warn(`Container ${containerName} is not running (status: ${containerStatus}). Attempting to restart...`);
-        await this.restartContainer(deployment);
+        const failures = (this.failureCounters.get(containerName) || 0) + 1;
+        this.failureCounters.set(containerName, failures);
+
+        if (failures >= this.MAX_CONSECUTIVE_FAILURES) {
+          this.logger.warn(`Container ${containerName} has failed ${failures} consecutive health checks. Attempting to restart...`);
+          await this.restartContainer(deployment);
+        } else {
+          this.logger.warn(`Container ${containerName} is not running (status: ${containerStatus}). Failure ${failures}/${this.MAX_CONSECUTIVE_FAILURES}`);
+        }
         return;
       }
 

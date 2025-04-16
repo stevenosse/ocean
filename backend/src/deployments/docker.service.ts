@@ -20,7 +20,17 @@ export class DockerService {
         private containerHealthService: ContainerHealthService,
         private prisma: PrismaService,
         private tunnelingService: TunnelingService,
-    ) { }
+    ) {
+        // Clean up any lingering processes on service shutdown
+        process.once('beforeExit', this.cleanup.bind(this));
+    }
+
+    private cleanup() {
+        // Remove all event listeners we may have added
+        process.removeAllListeners('SIGTERM');
+        process.removeAllListeners('SIGINT');
+        process.removeAllListeners('beforeExit');
+    }
 
     async runDockerComposeDeployment(
         deploymentId: number,
@@ -292,6 +302,9 @@ CMD ${startCommand}`;
                 ...envVars,
                 PORT: port.toString(),
                 HOST: '0.0.0.0',
+                NODE_OPTIONS: '--max-old-space-size=1536',
+                NODE_ENV: 'production',
+                V8_MAX_OLD_SPACE_SIZE: '1536',
                 OCEAN_CONTAINER_NAME: containerName,
                 OCEAN_ASSIGNED_PORT: port.toString(),
                 OCEAN_APP_URL: `http://localhost:${port}`,
@@ -302,17 +315,21 @@ CMD ${startCommand}`;
                 .join(' ');
 
             const runCommand = `docker run -d --name ${containerName} \
-        --restart unless-stopped \
-        --memory=512m \
-        --cpus=0.5 \
-        --add-host=host.docker.internal:host-gateway \
-        -p ${port}:${port} \
-        --health-cmd="curl --fail --silent http://localhost:${port}/health || curl --fail --silent http://localhost:${port} || exit 1" \
-        --health-interval=10s \
-        --health-timeout=5s \
-        --health-retries=6 \
-        --health-start-period=30s \
-        ${envArgs} ${imageName}`;
+            --restart on-failure:3 \
+            --memory=2g \
+            --memory-reservation=1.5g \
+            --memory-swap=2.5g \
+            --cpus=1.0 \
+            --add-host=host.docker.internal:host-gateway \
+            -p ${port}:${port} \
+            --log-opt max-size=50m \
+            --log-opt max-file=3 \
+            --health-cmd="curl --fail --silent http://localhost:${port}/health || curl --fail --silent http://localhost:${port} || exit 1" \
+            --health-interval=30s \
+            --health-timeout=10s \
+            --health-retries=3 \
+            --health-start-period=60s \
+            ${envArgs} ${imageName}`;
 
             const { stdout: runStdout } = await execAsync(runCommand, { timeout: 30000 });
             logs += runStdout;
